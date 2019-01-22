@@ -17,6 +17,14 @@
     "lib": [
       "es2018",
       "dom"
-    ]
+    ],
+    "paths": {
+      "firestore-dao": [
+        "dist/firestore-dao"
+      ],
+      "firestore-dao/*": [
+        "dist/firestore-dao/*"
+      ]
+    }
   }
 }

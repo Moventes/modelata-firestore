@@ -133,6 +133,41 @@
           }
         }
       }
+    },
+    "firestore-dao": {
+      "root": "projects/firestore-dao",
+      "sourceRoot": "projects/firestore-dao/src",
+      "projectType": "library",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/firestore-dao/tsconfig.lib.json",
+            "project": "projects/firestore-dao/ng-package.json"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/firestore-dao/src/test.ts",
+            "tsConfig": "projects/firestore-dao/tsconfig.spec.json",
+            "karmaConfig": "projects/firestore-dao/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/firestore-dao/tsconfig.lib.json",
+              "projects/firestore-dao/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
     }
   },
   "defaultProject": "modelata-firestore"
