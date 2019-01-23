@@ -14,7 +14,7 @@ export abstract class AbstractModel {
   @Enumerable(false)
   public _collectionPath: string;
 
-  private _controls: Object;
+  protected _controls: Object;
 
   /**
    * initializes the instance of the object with the given data and identifier
