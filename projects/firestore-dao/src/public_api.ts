@@ -2,6 +2,5 @@
  * Public API Surface of firestore-dao
  */
 
-export * from './lib/firestore-dao.service';
-export * from './lib/firestore-dao.component';
-export * from './lib/firestore-dao.module';
+export * from './lib/models/abstract.model';
+export * from './lib/models/firestore.dao';
