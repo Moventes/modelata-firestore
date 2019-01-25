@@ -62,8 +62,8 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
   public abstract getById(ids: Array<string> | string): Observable<M>;
 
   public abstract getList(
-    queryFieldName?: string,
     ids?: Array<string> | string,
+    queryFieldName?: string,
     equal?: string,
     sort?: 'desc' | 'asc',
     startWith?: string,
