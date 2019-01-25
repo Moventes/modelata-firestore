@@ -79,7 +79,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param collectionPath the full path to the object in a collection
    * @param editable true if the returned model should be editable, false otherwise
    */
-  public create(dbObj: Object, ids: Array<string> | string): M {
+  public create(dbObj?: Object, ids?: Array<string> | string): M {
     return this.getModel(dbObj, ids);
   }
 

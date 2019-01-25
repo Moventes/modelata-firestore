@@ -14,6 +14,7 @@ export abstract class AbstractModel {
   @Enumerable(false)
   public _collectionPath: string;
 
+  @Enumerable(false)
   protected _controls: Object;
 
   /**
@@ -25,9 +26,9 @@ export abstract class AbstractModel {
    */
   public initialize(
     modelObj: any,
-    dbObj: Object,
-    collectionPaths: Array<string> | string,
-    ids: Array<string> | string
+    dbObj?: Object,
+    collectionPaths?: Array<string> | string,
+    ids?: Array<string> | string
   ) {
     if (dbObj) {
       for (const key in dbObj) {
