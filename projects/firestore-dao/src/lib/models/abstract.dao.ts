@@ -1,3 +1,4 @@
+import { FormGroup } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
@@ -79,7 +80,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param collectionPath the full path to the object in a collection
    * @param editable true if the returned model should be editable, false otherwise
    */
-  public create(dbObj?: Object, ids?: Array<string> | string): M {
+  public castToModel(dbObj?: Object, ids?: Array<string> | string): M {
     return this.getModel(dbObj, ids);
   }
 
@@ -91,31 +92,37 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param collectionPath the path of the collection hosting the document
    * @param force force save even when the given data is a pristine FormGroup
    */
-  public save(modelObj: M, ids?: Array<string> | string, overwrite = false): Promise<M> {
-    // let objToSave;
-    // if (AbstractFormGroupFactory.isFormGroup(modelObj)) {
-    //   if ((<FormGroup>modelObj).pristine && !force) {
-    //     // no change, dont need to save
-    //     return Promise.resolve((<FormGroup>modelObj).value);
-    //   } else if (!(<FormGroup>modelObj).valid) {
-    //     // form is invalid, reject with errors
-    //     return Promise.reject((<FormGroup>modelObj).errors);
-    //   } else {
-    //     // ok, lets save
-    //     objToSave = (<FormGroup>modelObj).value;
-    //   }
-    // } else {
-    //   objToSave = modelObj;
-    // }
-    if (this.collectionPaths && !modelObj._collectionPath) {
-      ObjectHelper.createHiddenProperty(modelObj, 'collectionPath', ModelHelper.getPath(this.collectionPaths, ids));
+  public save(
+    modelObjP: M | FormGroup,
+    ids?: Array<string> | string,
+    overwrite = false,
+    force: boolean = false
+  ): Promise<M> {
+    let objToSave;
+    if (modelObjP instanceof FormGroup) {
+      if ((<FormGroup>modelObjP).pristine && !force) {
+        // no change, dont need to save
+        return Promise.resolve(this.castToModel((<FormGroup>modelObjP).value, ids));
+      } else if (!(<FormGroup>modelObjP).valid) {
+        // form is invalid, reject with errors
+        return Promise.reject((<FormGroup>modelObjP).errors);
+      } else {
+        // ok, lets save
+        objToSave = this.castToModel((<FormGroup>modelObjP).value, ids);
+      }
+    } else {
+      objToSave = modelObjP;
+    }
+
+    if (this.collectionPaths && !objToSave._collectionPath) {
+      ObjectHelper.createHiddenProperty(objToSave, 'collectionPath', ModelHelper.getPath(this.collectionPaths, ids));
     }
     console.log('======================== super-dao ===========================');
-    console.log(`= will save document at "${modelObj._collectionPath}" =`);
+    console.log(`= will save document at "${objToSave._collectionPath}" =`);
     console.log('==============================================================');
-    console.log('objToSave : ', modelObj);
+    console.log('objToSave : ', objToSave);
     console.log('==============================================================');
-    return this.push(modelObj, ids, overwrite);
+    return this.push(objToSave, ids, overwrite);
   }
 
   /**

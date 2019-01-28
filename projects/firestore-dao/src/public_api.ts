@@ -3,5 +3,6 @@
  */
 
 export * from './lib/decorators/enumerable.decorator';
+export * from './lib/decorators/form.decorator';
 export * from './lib/models/abstract.model';
 export * from './lib/models/firestore.dao';

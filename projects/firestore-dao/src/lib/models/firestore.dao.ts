@@ -36,7 +36,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       } else {
         ids = [dbObj.id];
       }
-      return this.create(dbObj.data(), ids);
+      return this.castToModel(dbObj.data(), ids);
     } else {
       console.error(
         '[firestoreDao] - getNewModelFromDb return null because dbObj.exists is null or false. dbObj :',
