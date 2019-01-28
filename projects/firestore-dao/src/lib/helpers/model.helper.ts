@@ -25,13 +25,18 @@ export class ModelHelper {
       throw new Error('some ids missing !!!!');
     }
 
-    return paths.reduce((res, path, index) => {
-      res += path;
-      if (ids && index + 1 <= ids.length && (withId || (!withId && index + 1 < paths.length))) {
-        res += ids[index];
-      }
+    return (
+      '/' +
+      paths
+        .reduce((res, path, index) => {
+          res.push(path);
+          if (ids && index + 1 <= ids.length && (withId || (!withId && index + 1 < paths.length))) {
+            res.push(ids[index]);
+          }
 
-      return res;
-    }, '');
+          return res;
+        }, [])
+        .join('/')
+    );
   }
 }
