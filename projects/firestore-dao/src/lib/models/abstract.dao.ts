@@ -99,7 +99,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
     force: boolean = false
   ): Promise<M> {
     let objToSave;
-    if (modelObjP instanceof FormGroup) {
+    if (modelObjP instanceof FormGroup || modelObjP.constructor.name === 'FormGroup') {
       if ((<FormGroup>modelObjP).pristine && !force) {
         // no change, dont need to save
         return Promise.resolve(this.castToModel((<FormGroup>modelObjP).value, ids));
