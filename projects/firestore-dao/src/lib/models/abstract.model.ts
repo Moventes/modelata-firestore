@@ -73,7 +73,10 @@ export abstract class AbstractModel {
       if (requiredFields.includes(controlName)) {
         validators.push(Validators.required);
       }
-      formControls[controlName] = new FormControl(this[controlName] ? this[controlName] : null, validators);
+      formControls[controlName] = new FormControl(
+        this[controlName] !== undefined ? this[controlName] : null,
+        validators
+      );
     });
     return new FormGroup(formControls);
   }
