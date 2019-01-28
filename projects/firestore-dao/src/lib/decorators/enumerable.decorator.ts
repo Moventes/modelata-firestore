@@ -3,7 +3,7 @@ export function Enumerable(value: boolean) {
     const descriptor = Object.getOwnPropertyDescriptor(target, propertyKey) || {};
     if (descriptor.enumerable !== value) {
       descriptor.enumerable = value;
-      descriptor.writable = true;
+      // descriptor.writable = true;
       Object.defineProperty(target, propertyKey, descriptor);
     }
   };
