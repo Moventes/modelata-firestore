@@ -9,14 +9,18 @@ export class ModelHelper {
     let paths;
     if (typeof pathsp === 'string') {
       paths = [pathsp];
-    } else {
+    } else if (Array.isArray(pathsp)) {
       paths = pathsp;
+    } else {
+      paths = [];
     }
     let ids;
     if (typeof idsp === 'string') {
       ids = [idsp];
-    } else {
+    } else if (Array.isArray(idsp)) {
       ids = idsp;
+    } else {
+      ids = [];
     }
     if (paths.length <= 0) {
       throw new Error('paths must be defined');

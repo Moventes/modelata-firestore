@@ -155,7 +155,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   public getList(
     ids?: Array<string> | string,
     queryFieldName: string = null,
-    equal: string = null,
+    equal: string | boolean = null,
     sort: 'desc' | 'asc' = null,
     startWith: string = null,
     limit = -1,
