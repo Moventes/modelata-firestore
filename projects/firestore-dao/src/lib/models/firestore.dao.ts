@@ -165,13 +165,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   ): Observable<Array<M>> {
     let queryResult: AngularFirestoreCollection<M>;
 
-    if (queryFieldName && (startWith || sort || equal) /*|| pagination*/) {
+    if (queryFieldName && (startWith || sort || (equal !== null && equal !== undefined)) /*|| pagination*/) {
       const specialQuery = ref => {
         let query: firebase.firestore.CollectionReference | firebase.firestore.Query = ref;
         if (startWith) {
           query = query.where(queryFieldName, '>=', startWith).where(queryFieldName, '<=', startWith + '\uffff');
         }
-        if (equal) {
+        if (equal !== null && equal !== undefined) {
           query = query.where(queryFieldName, '==', equal);
         }
         if (sort) {
