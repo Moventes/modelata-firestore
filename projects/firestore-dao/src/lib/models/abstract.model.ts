@@ -68,7 +68,7 @@ export abstract class AbstractModel {
 
   toFormGroup(requiredFields: Array<string> = []): FormGroup {
     const formControls = {};
-    Object(this._controls).keys.forEach(controlName => {
+    Object.keys(this._controls).forEach(controlName => {
       const validators = this._controls[controlName];
       if (requiredFields.includes(controlName)) {
         validators.push(Validators.required);
