@@ -10,7 +10,7 @@ import { AbstractModel } from './abstract.model';
  * Common/super Abstract DAO class
  */
 export abstract class AbstractDao<M extends AbstractModel> {
-  protected collectionPath: string;
+  protected collectionPath: string = null;
 
   constructor() {}
 

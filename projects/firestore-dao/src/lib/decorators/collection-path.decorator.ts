@@ -1,5 +1,5 @@
 export function CollectionPath(path: string): any {
-  return (target: Object) => {
-    target['collectionPath'] = path;
+  return (target: any) => {
+    target.prototype['collectionPath'] = path;
   };
 }
