@@ -53,7 +53,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param collectionPath the full path to the object in a collection
    * @param editable true to have a FormGroup, false otherwise
    */
-  protected abstract getModel(dbObj?: Object, docId?: string, pathIds?: Array<string>): M;
+  public abstract getModel(dbObj?: Object, docId?: string, pathIds?: Array<string>): M;
 
   // ______________________________public methods_________________________________
 
