@@ -35,7 +35,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
           pathIds.push(pathSplitted[i]);
         }
       }
-      return this.getModel(documentSnapshot.data(), documentSnapshot.id, pathIds);
+      return this.getModel(
+        { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache },
+        documentSnapshot.id,
+        pathIds
+      );
     } else {
       console.error(
         '[firestoreDao] - getNewModelFromDb return null because dbObj.exists is null or false. dbObj :',

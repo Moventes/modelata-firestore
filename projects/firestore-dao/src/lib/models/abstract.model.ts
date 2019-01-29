@@ -17,6 +17,9 @@ export abstract class AbstractModel {
   @Enumerable(false)
   protected _controls: Object;
 
+  @Enumerable(false)
+  protected _fromCache: boolean;
+
   /**
    * initializes the instance of the object with the given data and identifier
    * @param dbObj the data to inject in the instance
@@ -49,6 +52,10 @@ export abstract class AbstractModel {
       ObjectHelper.createHiddenProperty(this, 'collectionPath', ModelHelper.getPath(path, pathIds));
     } else if (dbObj && dbObj['_collectionPath']) {
       ObjectHelper.createHiddenProperty(this, 'collectionPath', dbObj['_collectionPath']);
+    }
+
+    if (dbObj['_fromCache']) {
+      this._fromCache = dbObj['_fromCache'];
     }
   }
 
