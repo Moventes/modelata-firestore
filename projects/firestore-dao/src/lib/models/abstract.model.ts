@@ -19,50 +19,36 @@ export abstract class AbstractModel {
 
   /**
    * initializes the instance of the object with the given data and identifier
-   * @param modelObj the instance to initialize
    * @param dbObj the data to inject in the instance
    * @param id the identifier to set
    * @param collectionPath the path of the collection hosting the document
    */
-  public initialize(
-    modelObj: any,
-    dbObj?: Object,
-    collectionPaths?: Array<string> | string,
-    ids?: Array<string> | string
-  ) {
+  protected initialize(dbObj?: Object, docId?: string, path?: string, pathIds?: Array<string>) {
     if (dbObj) {
       for (const key in dbObj) {
         if (!key.startsWith('_') && !key.startsWith('$') && typeof dbObj[key] !== 'function') {
-          if (modelObj.hasOwnProperty(key)) {
+          if (this.hasOwnProperty(key)) {
             if (dbObj[key] && typeof dbObj[key].toDate === 'function') {
-              modelObj[key] = dbObj[key].toDate();
+              this[key] = dbObj[key].toDate();
             } else {
-              modelObj[key] = dbObj[key];
+              this[key] = dbObj[key];
             }
           } else {
-            MissingFieldNotifier.notifyMissingField(modelObj.constructor.name, key);
+            MissingFieldNotifier.notifyMissingField(this.constructor.name, key);
           }
         }
       }
     }
-    if (ids) {
-      if (typeof ids === 'string') {
-        ObjectHelper.createHiddenProperty(modelObj, 'id', ids);
-      } else if (ids.length && ids.length > 0) {
-        ObjectHelper.createHiddenProperty(modelObj, 'id', ids[ids.length - 1]);
-      }
+    if (docId) {
+      ObjectHelper.createHiddenProperty(this, 'id', docId);
     } else if (dbObj && dbObj['_id']) {
-      ObjectHelper.createHiddenProperty(modelObj, 'id', dbObj['_id']);
+      ObjectHelper.createHiddenProperty(this, 'id', dbObj['_id']);
     }
 
-    if (collectionPaths) {
-      if (typeof collectionPaths === 'string') {
-        ObjectHelper.createHiddenProperty(modelObj, 'collectionPath', collectionPaths);
-      } else if (collectionPaths.length && collectionPaths.length > 0) {
-        ObjectHelper.createHiddenProperty(modelObj, 'collectionPath', ModelHelper.getPath(collectionPaths, ids));
-      }
+    if (path) {
+      ObjectHelper.createHiddenProperty(this, 'collectionPath', ModelHelper.getPath(path, pathIds));
     } else if (dbObj && dbObj['_collectionPath']) {
-      ObjectHelper.createHiddenProperty(modelObj, 'collectionPath', dbObj['_collectionPath']);
+      ObjectHelper.createHiddenProperty(this, 'collectionPath', dbObj['_collectionPath']);
     }
   }
 

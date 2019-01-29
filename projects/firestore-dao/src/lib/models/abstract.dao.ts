@@ -1,20 +1,20 @@
+import { DocumentSnapshot } from '@angular/fire/firestore';
 import { FormGroup } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
+import { OrderBy, Where } from './../types/get-list-types.interface';
 import { AbstractModel } from './abstract.model';
 
 /**
  * Common/super Abstract DAO class
  */
-export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentIdentifiers*/> {
-  protected collectionPaths: Array<string> | string;
+export abstract class AbstractDao<M extends AbstractModel> {
+  protected collectionPath: string;
 
-  constructor(collectionPath: Array<string> | string) {
-    this.collectionPaths = collectionPath;
-  }
+  constructor() {}
 
-  // ____________________________to be implemented by AbstractDao________________________________
+  // ____________________________to be implemented by FirestoreAbstractDao________________________________
 
   /**
    * returns an instance of a view object from a database object
@@ -22,7 +22,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param dbObj the database object
    * @param collectionPath the full path to the object in a collection
    */
-  protected abstract getNewModelFromDb(dbObj: Object): M;
+  protected abstract getModelFromSnapshot(documentSnapshot: DocumentSnapshot<M>): M;
 
   /**
    * pushes the data with the appropriate action
@@ -30,7 +30,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param overwrite true to overwrite data, false otherwise
    * @param id the identifier to use for insert (optionnal)
    */
-  protected abstract push(modelObj: M, ids?: Array<string> | string, overwrite?: boolean): Promise<M>;
+  protected abstract push(modelObj: M, docId?: string, pathIds?: Array<string>, overwrite?: boolean): Promise<M>;
 
   /**
    * pushes the dbObj with the appropriate action
@@ -39,7 +39,12 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param documentId the identifier to use for insert
    * @param collectionPath the full path to the object in a collection
    */
-  protected abstract pushData(dbObj: Object, ids?: Array<string> | string, overwrite?: boolean): Promise<Object>;
+  protected abstract pushData(
+    dbObj: Object,
+    docId?: string,
+    pathIds?: Array<string>,
+    overwrite?: boolean
+  ): Promise<Object>;
 
   // ______________________________to be implemented by ModelDao_________________________________
 
@@ -48,7 +53,7 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param collectionPath the full path to the object in a collection
    * @param editable true to have a FormGroup, false otherwise
    */
-  protected abstract getModel(dbObj?: Object, ids?: Array<string> | string): M;
+  protected abstract getModel(dbObj?: Object, docId?: string, pathIds?: Array<string>): M;
 
   // ______________________________public methods_________________________________
 
@@ -60,29 +65,14 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    * @param collectionPath the path of the collection hosting the document
    * @param editable true to have a FromGroup, false to have a Model object
    */
-  public abstract getById(ids: Array<string> | string): Observable<M>;
+  public abstract getById(docId: string, pathIds?: Array<string>): Observable<M>;
 
   public abstract getList(
-    ids?: Array<string> | string,
-    queryFieldName?: string,
-    equal?: string,
-    sort?: 'desc' | 'asc',
-    startWith?: string,
-    limit?: number,
-    fullInstantaneousSnap?: boolean
+    pathIds?: Array<string>,
+    where?: Array<Where>,
+    orderBy?: OrderBy,
+    limit?: number
   ): Observable<Array<M>>;
-
-  /**
-   * returns an instance of the model managed by the DAO class,
-   * or a FormGroup depending whether editable is truthy or not
-   * @param dbObj the data to set in the model instance
-   * @param id the identifier to set on the model instance
-   * @param collectionPath the full path to the object in a collection
-   * @param editable true if the returned model should be editable, false otherwise
-   */
-  public castToModel(dbObj?: Object, ids?: Array<string> | string): M {
-    return this.getModel(dbObj, ids);
-  }
 
   /**
    * saves the given data in database
@@ -94,7 +84,8 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
    */
   public save(
     modelObjP: M | FormGroup,
-    ids?: Array<string> | string,
+    docId?: string,
+    pathIds?: Array<string>,
     overwrite = false,
     force: boolean = false
   ): Promise<M> {
@@ -102,77 +93,58 @@ export abstract class AbstractDao<M extends AbstractModel /*, I extends ParentId
     if (modelObjP instanceof FormGroup || modelObjP.constructor.name === 'FormGroup') {
       if ((<FormGroup>modelObjP).pristine && !force) {
         // no change, dont need to save
-        return Promise.resolve(this.castToModel((<FormGroup>modelObjP).value, ids));
+        return Promise.resolve(this.getModel((<FormGroup>modelObjP).value, docId, pathIds));
       } else if (!(<FormGroup>modelObjP).valid) {
         // form is invalid, reject with errors
         return Promise.reject((<FormGroup>modelObjP).errors);
       } else {
         // ok, lets save
-        objToSave = this.castToModel((<FormGroup>modelObjP).value, ids);
+        objToSave = this.getModel((<FormGroup>modelObjP).value, docId, pathIds);
       }
     } else {
       objToSave = modelObjP;
     }
 
-    if (this.collectionPaths && !objToSave._collectionPath) {
-      ObjectHelper.createHiddenProperty(objToSave, 'collectionPath', ModelHelper.getPath(this.collectionPaths, ids));
+    if (this.collectionPath && !objToSave._collectionPath) {
+      ObjectHelper.createHiddenProperty(objToSave, 'collectionPath', ModelHelper.getPath(this.collectionPath, pathIds));
     }
-    console.log('======================== super-dao ===========================');
-    console.log(`= will save document at "${objToSave._collectionPath}" =`);
-    console.log('==============================================================');
-    console.log('objToSave : ', objToSave);
-    console.log('==============================================================');
-    return this.push(objToSave, ids, overwrite);
+
+    console.log('super-dao ========== will save document : ', JSON.stringify(objToSave));
+    return this.push(objToSave, docId, pathIds, overwrite);
   }
 
   /**
    * saves the given data in database
-   * @param modelObj the data to save
-   * @param overwrite true to overwrite data
+   * @param partialDbObj onlythe data to save
    * @param id the identifier to use for insert (optionnal)
    */
-  public update(dbObj: Object, ids: Array<string> | string): Promise<Object> {
-    console.log('======================== super- dao ===========================');
-    console.log(`= will update partially document at "${ModelHelper.getPath(this.collectionPaths, ids, true)}" =`);
-    console.log('==============================================================');
-    console.log('data : ', dbObj);
-    console.log('==============================================================');
-    if (!dbObj || !ids || !this.collectionPaths) {
+  public update(partialDbObj: Object, docId?: string, pathIds?: Array<string>): Promise<Object> {
+    console.log(
+      `super- dao ==== will update partially document "${JSON.stringify(partialDbObj)}" at "${ModelHelper.getPath(
+        this.collectionPath,
+        pathIds,
+        docId
+      )}" =`
+    );
+
+    if (!partialDbObj || !docId || !this.collectionPath) {
       return Promise.reject('required attrs');
     } else {
-      return this.pushData(dbObj, ids).then(docId => {
-        ObjectHelper.createHiddenProperty(dbObj, 'id', docId);
-        return dbObj;
-      });
+      return this.pushData(partialDbObj, docId, pathIds);
     }
   }
-
-  // /**
-  //  * returns the list of documents in the collection
-  //  * The list may be:
-  //  * - filtered: add an object of the searched type with the values to filter on
-  //  * - sorted: give the name of the field to sort on, and a boolean to tell whether it should be descendant or not
-  //  * - paginated: give the pagination details to have a subset of the list as desired
-  //  * @param collectionPath the path of the collection hosting the document
-  //  * @param editable true to have a FromGroup, false to have a Model object
-  //  * @param filter the filter to apply to search
-  //  * @param orderBy the orderBy to apply to search
-  //  * @param pagination the pagination to apply to search
-  //  */
-
-  // public abstract getList(
-  //   collectionPath: string,
-  //   editable: boolean,
-  //   filter: M,
-  //   orderBy: OrderBy,
-  //   pagination: Pagination
-  // ): Observable<Array<M | FormGroup>>;
 
   /**
    * removes the given object from database
    * @param modelObj the object to remove
    */
-  public abstract delete(modelObj: M): Promise<any>;
+  public abstract delete(modelObj: M): Promise<void>;
+
+  /**
+   * removes the given object from database
+   * @param modelObj the object to remove
+   */
+  public abstract deleteById(docId: string, pathIds?: Array<string>): Promise<void>;
 
   // TODO Later: implement dynamic search
   // getDynamicList(filter: BehaviorSubject<M>,  pagination,  orderBy): Observable<M[]>
