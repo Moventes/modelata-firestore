@@ -1,5 +1,9 @@
 export class ModelHelper {
   static getPath(collectionPath: string, pathIds: Array<string> = [], docId?: string): string {
+    if (pathIds === null) {
+      pathIds = [];
+    }
+
     if (collectionPath.length <= 0) {
       throw new Error('collectionPath must be defined');
     }

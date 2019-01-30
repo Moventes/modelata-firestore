@@ -1,5 +1,6 @@
 import { DocumentSnapshot } from '@angular/fire/firestore';
 import { FormGroup } from '@angular/forms';
+import 'reflect-metadata';
 import { Observable } from 'rxjs';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
@@ -10,7 +11,7 @@ import { AbstractModel } from './abstract.model';
  * Common/super Abstract DAO class
  */
 export abstract class AbstractDao<M extends AbstractModel> {
-  protected collectionPath: string = null;
+  protected collectionPath: string = Reflect.getMetadata('collectionPath', this.constructor);
 
   constructor() {}
 

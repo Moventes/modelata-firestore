@@ -54,8 +54,8 @@ export abstract class AbstractModel {
       ObjectHelper.createHiddenProperty(this, 'collectionPath', dbObj['_collectionPath']);
     }
 
-    if (dbObj['_fromCache']) {
-      this._fromCache = dbObj['_fromCache'];
+    if (dbObj && dbObj['_fromCache']) {
+      ObjectHelper.createHiddenProperty(this, 'fromCache', dbObj['_fromCache']);
     }
   }
 

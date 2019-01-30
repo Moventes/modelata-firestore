@@ -1,5 +1,7 @@
+import 'reflect-metadata';
+
 export function CollectionPath(path: string): any {
-  return (target: any) => {
-    target.prototype['collectionPath'] = path;
+  return (target: Object) => {
+    Reflect.defineMetadata('collectionPath', path, target);
   };
 }

@@ -2,6 +2,7 @@
   "name": "modelata-firestore",
   "version": "0.0.0",
   "scripts": {
+    "link": "npm run build && cd dist/firestore-dao && npm link",
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build firestore-dao",
@@ -23,6 +24,7 @@
     "@angular/router": "~7.2.0",
     "core-js": "^2.5.4",
     "firebase": "^5.8.0",
+    "reflect-metadata": "^0.1.13",
     "rxjs": "~6.3.3",
     "tslib": "^1.9.0",
     "zone.js": "~0.8.26"
