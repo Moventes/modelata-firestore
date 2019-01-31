@@ -1,4 +1,4 @@
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Validators } from '@angular/forms';
 import { Enumerable } from '../decorators/enumerable.decorator';
 import { MissingFieldNotifier } from '../helpers/missing-field-notifier';
 import { ModelHelper } from '../helpers/model.helper';
@@ -59,23 +59,24 @@ export abstract class AbstractModel {
     }
   }
 
-  toFormGroup(requiredFields: Array<string> = []): FormGroup {
+  toFormBuilderData(requiredFields: Array<string> = []): { [key: string]: Array<any> } {
     const formControls = {
-      _id: this._id,
-      _collectionPath: this._collectionPath
+      _id: [this._id, []],
+      _collectionPath: [this._collectionPath, []]
     };
     Object.keys(this._controls).forEach(controlName => {
       const validators = this._controls[controlName];
       if (requiredFields.includes(controlName)) {
         validators.push(Validators.required);
       }
-      formControls[controlName] = new FormControl(
-        this[controlName] !== undefined ? this[controlName] : null,
-        validators
-      );
+      formControls[controlName] = [this[controlName] !== undefined ? this[controlName] : null, validators];
     });
-    return new FormBuilder().group(formControls);
+    return formControls;
   }
+
+  // toFormGroup(requiredFields: Array<string> = []): FormGroup {
+  //   return new FormBuilder().group(this.toFormGroupData(requiredFields));
+  // }
 
   toString(): string {
     return `${this._collectionPath}/${this._id}`;
