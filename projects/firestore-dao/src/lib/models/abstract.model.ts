@@ -1,4 +1,4 @@
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Enumerable } from '../decorators/enumerable.decorator';
 import { MissingFieldNotifier } from '../helpers/missing-field-notifier';
 import { ModelHelper } from '../helpers/model.helper';
@@ -60,7 +60,10 @@ export abstract class AbstractModel {
   }
 
   toFormGroup(requiredFields: Array<string> = []): FormGroup {
-    const formControls = {};
+    const formControls = {
+      _id: this._id,
+      _collectionPath: this._collectionPath
+    };
     Object.keys(this._controls).forEach(controlName => {
       const validators = this._controls[controlName];
       if (requiredFields.includes(controlName)) {
@@ -71,7 +74,7 @@ export abstract class AbstractModel {
         validators
       );
     });
-    return new FormGroup(formControls);
+    return new FormBuilder().group(formControls);
   }
 
   toString(): string {
