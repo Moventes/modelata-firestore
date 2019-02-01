@@ -20,6 +20,9 @@ export abstract class AbstractModel {
   @Enumerable(false)
   protected _fromCache: boolean;
 
+  @Enumerable(false)
+  protected _updateDate: Date;
+
   /**
    * initializes the instance of the object with the given data and identifier
    * @param dbObj the data to inject in the instance
@@ -56,6 +59,10 @@ export abstract class AbstractModel {
 
     if (dbObj && dbObj['_fromCache']) {
       ObjectHelper.createHiddenProperty(this, 'fromCache', dbObj['_fromCache']);
+    }
+
+    if (dbObj && dbObj['_updateDate'] && typeof dbObj['_updateDate'].toDate === 'function') {
+      ObjectHelper.createHiddenProperty(this, 'updateDate', dbObj['_updateDate'].toDate());
     }
   }
 

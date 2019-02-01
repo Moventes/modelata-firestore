@@ -6,6 +6,7 @@ import {
   DocumentSnapshot,
   Query
 } from '@angular/fire/firestore';
+import * as firebase from 'firebase';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
@@ -73,6 +74,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         return Promise.reject(`try to update/add an attribute that is not defined in the model = ${key}`);
       }
     }
+
+    dbObj['_updateDate'] = firebase.firestore.FieldValue.serverTimestamp();
 
     if (docId) {
       const collectionName = ModelHelper.getPath(this.collectionPath, pathIds, docId);
