@@ -108,22 +108,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     const dbObj: Object = {};
 
     Object.keys(modelObj).forEach(key => {
-      if (key.startsWith('$')) {
-        if (modelObj[key] && key !== '_id' && key !== '_collectionPath') {
-          dbObj[key] = modelObj[key];
-        } else {
-          if (key === '_id') {
-            console.log('we getDbObjFromModelObj of ', modelObj._id);
-          } else {
-            console.log('getDbObjFromModelObj ignore ', key);
-          }
-        }
-      } else if (!key.startsWith('_') && typeof modelObj[key] !== 'undefined') {
+      if (!key.startsWith('$') && !key.startsWith('_') && typeof modelObj[key] !== 'undefined') {
         if (modelObj[key] && modelObj[key].constructor.name === 'Object') {
           dbObj[key] = this.getDbObjFromModelObj(modelObj[key]);
         } else {
           dbObj[key] = modelObj[key];
         }
+      } else {
+        console.log('getDbObjFromModelObj ignore ', key);
       }
     });
 
