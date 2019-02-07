@@ -110,7 +110,11 @@ export abstract class AbstractDao<M extends AbstractModel> {
       ObjectHelper.createHiddenProperty(objToSave, 'collectionPath', ModelHelper.getPath(this.collectionPath, pathIds));
     }
 
-    console.log('super-dao ========== will save document : ', JSON.stringify(objToSave));
+    console.log(
+      `super-dao ========== will save document document "${docId || objToSave._id || 'new'}" at ${
+        objToSave._collectionPath
+      }`
+    );
     return this.push(objToSave, docId, pathIds, overwrite);
   }
 
@@ -121,7 +125,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    */
   public update(partialDbObj: Object, docId?: string, pathIds?: Array<string>): Promise<Object> {
     console.log(
-      `super- dao ==== will update partially document "${JSON.stringify(partialDbObj)}" at "${ModelHelper.getPath(
+      `super- dao ==== will update partially document at "${ModelHelper.getPath(
         this.collectionPath,
         pathIds,
         docId
