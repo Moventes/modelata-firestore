@@ -97,7 +97,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
         return Promise.resolve(this.getModel((<FormGroup>modelObjP).value, docId, pathIds));
       } else if (!(<FormGroup>modelObjP).valid) {
         // form is invalid, reject with errors
-        return Promise.reject((<FormGroup>modelObjP).errors);
+        return Promise.reject((<FormGroup>modelObjP).errors || 'invalid form');
       } else {
         // ok, lets save
         objToSave = this.getModel((<FormGroup>modelObjP).value, docId, pathIds);
