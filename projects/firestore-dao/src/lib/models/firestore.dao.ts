@@ -207,4 +207,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   public getReference(docId: string, pathIds?: Array<string>): DocumentReference {
     return this.db.doc(ModelHelper.getPath(this.collectionPath, pathIds, docId)).ref;
   }
+
+  /**
+   * Returns the reference of the document located in the collectionPath with the id.
+   *
+   * @param modelObj - model M
+   */
+  public getReferenceFromModel(modelObj: M): DocumentReference {
+    return this.db.collection(modelObj._collectionPath).doc(modelObj._id).ref;
+  }
 }
