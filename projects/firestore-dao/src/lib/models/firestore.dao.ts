@@ -68,7 +68,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
    * @inheritDoc
    */
   protected pushData(dbObj: Object, docId?: string, pathIds?: Array<string>, overwrite = false): Promise<Object> {
-    const emptyModel = this.getModel();
+    const emptyModel = this.getModel({}, '?', pathIds);
     for (const key in dbObj) {
       if (!emptyModel.hasOwnProperty(key)) {
         return Promise.reject(`try to update/add an attribute that is not defined in the model = ${key}`);
