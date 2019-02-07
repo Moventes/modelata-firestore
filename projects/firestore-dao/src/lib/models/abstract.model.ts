@@ -72,7 +72,7 @@ export abstract class AbstractModel {
       _collectionPath: [this._collectionPath, []]
     };
     Object.keys(this._controls).forEach(controlName => {
-      const validators = this._controls[controlName];
+      const validators = [...this._controls[controlName]];
       if (requiredFields.includes(controlName)) {
         validators.push(Validators.required);
       }
