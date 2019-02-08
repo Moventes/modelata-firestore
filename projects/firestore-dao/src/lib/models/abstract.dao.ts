@@ -95,7 +95,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
       if ((<FormGroup>modelObjP).pristine && !force) {
         // no change, dont need to save
         return Promise.resolve(this.getModel((<FormGroup>modelObjP).value, docId, pathIds));
-      } else if (!(<FormGroup>modelObjP).valid) {
+      } else if ((<FormGroup>modelObjP).invalid) {
         // form is invalid, reject with errors
         return Promise.reject((<FormGroup>modelObjP).errors || 'invalid form');
       } else {
