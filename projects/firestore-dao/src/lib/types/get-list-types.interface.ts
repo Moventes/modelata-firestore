@@ -1,5 +1,3 @@
-import * as firebase from 'firebase';
-
 export interface Where {
   field: string;
   operator: firebase.firestore.WhereFilterOp;

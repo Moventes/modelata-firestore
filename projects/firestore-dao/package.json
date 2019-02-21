@@ -1,6 +1,6 @@
 {
   "name": "@modelata/firestore",
-  "version": "2.0.37",
+  "version": "2.0.38",
   "private": false,
   "author": {
     "name": "moventes",
@@ -11,6 +11,6 @@
     "@angular/core": "^7.2.0",
     "@angular/forms": "^7.2.0",
     "@angular/fire": "^5.1.1",
-    "firebase": "^5.8.0"
+    "firebase": "^5.8.3"
   }
 }

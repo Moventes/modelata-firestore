@@ -6,7 +6,7 @@ import {
   DocumentSnapshot,
   Query
 } from '@angular/fire/firestore';
-import * as firebase from 'firebase';
+import { firestore } from 'firebase';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
@@ -75,7 +75,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       }
     }
 
-    dbObj['_updateDate'] = firebase.firestore.FieldValue.serverTimestamp();
+    dbObj['_updateDate'] = firestore.FieldValue.serverTimestamp();
 
     if (docId) {
       const collectionName = ModelHelper.getPath(this.collectionPath, pathIds, docId);
