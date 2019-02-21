@@ -6,7 +6,7 @@ import {
   DocumentSnapshot,
   Query
 } from '@angular/fire/firestore';
-import { firestore } from 'firebase';
+import { firestore } from 'firebase/app';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
