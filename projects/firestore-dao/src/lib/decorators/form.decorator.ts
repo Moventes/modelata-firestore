@@ -11,6 +11,17 @@ export function FormControlValidators(value: Array<Validator | ValidatorFn> = []
   };
 }
 
+export function ToFormControl() {
+  return function (target: any, propertyKey: string) {
+    if (typeof target['_controls'] !== 'object') {
+      target['_controls'] = {};
+    }
+    if (!target['_controls'][propertyKey]) {
+      target['_controls'][propertyKey] = [];
+    }
+  };
+}
+
 export function NotInFormControl() {
   return function (target: any, propertyKey: string) {
     if (typeof target['_notControls'] !== 'object') {

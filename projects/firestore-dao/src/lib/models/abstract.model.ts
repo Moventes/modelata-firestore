@@ -77,11 +77,11 @@ export abstract class AbstractModel {
     // tslint:disable-next-line: forin
     for (const controlNameP in this) {
       const controlName = controlNameP.toString();
-      // Object.keys(this._controls).forEach(controlName => {
       if (
-        !controlName.startsWith('_') &&
-        !controlName.startsWith('$') &&
-        typeof this[controlName] !== 'function' &&
+        ((!controlName.startsWith('_') &&
+          !controlName.startsWith('$') &&
+          typeof this[controlName] !== 'function') ||
+          !!formControls[controlName]) &&
         !this._notControls[controlName]
       ) {
 
@@ -90,9 +90,9 @@ export abstract class AbstractModel {
           validators.push(Validators.required);
         }
         formControls[controlName] = [this[controlName] !== undefined ? this[controlName] : null, validators];
-        // });
       }
     }
+
     return formControls;
   }
 
