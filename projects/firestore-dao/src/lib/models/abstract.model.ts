@@ -18,6 +18,9 @@ export abstract class AbstractModel {
   protected _controls: Object;
 
   @Enumerable(false)
+  protected _notControls: Object;
+
+  @Enumerable(false)
   protected _fromCache: boolean;
 
   @Enumerable(false)
@@ -71,13 +74,25 @@ export abstract class AbstractModel {
       _id: [this._id, []],
       _collectionPath: [this._collectionPath, []]
     };
-    Object.keys(this._controls).forEach(controlName => {
-      const validators = [...this._controls[controlName]];
-      if (requiredFields.includes(controlName)) {
-        validators.push(Validators.required);
+    // tslint:disable-next-line: forin
+    for (const controlNameP in this) {
+      const controlName = controlNameP.toString();
+      // Object.keys(this._controls).forEach(controlName => {
+      if (
+        !controlName.startsWith('_') &&
+        !controlName.startsWith('$') &&
+        typeof this[controlName] !== 'function' &&
+        !this._notControls[controlName]
+      ) {
+
+        const validators = [...this._controls[controlName]];
+        if (requiredFields.includes(controlName)) {
+          validators.push(Validators.required);
+        }
+        formControls[controlName] = [this[controlName] !== undefined ? this[controlName] : null, validators];
+        // });
       }
-      formControls[controlName] = [this[controlName] !== undefined ? this[controlName] : null, validators];
-    });
+    }
     return formControls;
   }
 

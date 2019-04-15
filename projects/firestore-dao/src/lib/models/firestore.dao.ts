@@ -1,11 +1,4 @@
-import {
-  AngularFirestore,
-  AngularFirestoreCollection,
-  DocumentChangeAction,
-  DocumentReference,
-  DocumentSnapshot,
-  Query
-} from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -122,14 +115,22 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     return dbObj;
   }
 
+  public isCompatible(doc: M | DocumentReference): boolean {
+    return ModelHelper.isCompatiblePath(this.collectionPath, doc['path'] || doc['_collectionPath']);
+  }
+
   public getByReference(docRef: DocumentReference): Observable<M> {
-    if (docRef && docRef.parent) {
-      return this.db
-        .doc<M>(docRef)
-        .snapshotChanges()
-        .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
+    if (this.isCompatible(docRef)) {
+      if (docRef && docRef.parent) {
+        return this.db
+          .doc<M>(docRef)
+          .snapshotChanges()
+          .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
+      } else {
+        throw new Error('getByReference missing parameter : dbRef.');
+      }
     } else {
-      throw new Error('getByReference missing parameter : dbRef.');
+      throw new Error('docRef is not compatible with this dao!');
     }
   }
 
