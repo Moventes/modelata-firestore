@@ -15,10 +15,10 @@ export abstract class AbstractModel {
   public _collectionPath: string;
 
   @Enumerable(false)
-  protected _controls: Object;
+  protected _controls: Object = {};
 
   @Enumerable(false)
-  protected _notControls: Object;
+  protected _notControls: Object = {};
 
   @Enumerable(false)
   protected _fromCache: boolean;
