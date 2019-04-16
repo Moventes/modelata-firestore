@@ -49,7 +49,7 @@ export class ModelHelper {
       if (collectionPathSplitted[collectionPathSplitted.length - 1] === '') {
         collectionPathSplitted.pop();
       }
-      if (collectionPathSplitted.length !== docPathSplitted.length - 1) {
+      if (collectionPathSplitted.length < docPathSplitted.length - 1 || collectionPathSplitted.length > docPathSplitted.length) {
         return false;
       }
       return collectionPathSplitted.every((path, index) => {
