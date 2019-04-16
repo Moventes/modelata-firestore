@@ -81,7 +81,7 @@ export abstract class AbstractModel {
         ((!controlName.startsWith('_') &&
           !controlName.startsWith('$') &&
           typeof this[controlName] !== 'function') ||
-          !!formControls[controlName]) &&
+          !!this._controls[controlName]) &&
         !this._notControls[controlName]
       ) {
 
