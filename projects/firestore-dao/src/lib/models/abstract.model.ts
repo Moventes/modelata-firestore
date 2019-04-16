@@ -85,7 +85,7 @@ export abstract class AbstractModel {
         !this._notControls[controlName]
       ) {
 
-        const validators = [...this._controls[controlName]];
+        const validators = ([]).concat(this._controls[controlName] || []);
         if (requiredFields.includes(controlName)) {
           validators.push(Validators.required);
         }
