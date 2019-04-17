@@ -15,10 +15,10 @@ export abstract class AbstractModel {
   public _collectionPath: string;
 
   @Enumerable(false)
-  protected _controls: Object = {};
+  protected _controls: Object;
 
   @Enumerable(false)
-  protected _notControls: Object = {};
+  protected _notControls: Object;
 
   @Enumerable(false)
   protected _fromCache: boolean;
@@ -74,6 +74,12 @@ export abstract class AbstractModel {
       _id: [this._id, []],
       _collectionPath: [this._collectionPath, []]
     };
+    if (!this._controls) {
+      this._controls = {};
+    }
+    if (!this._notControls) {
+      this._notControls = {};
+    }
     // tslint:disable-next-line: forin
     for (const controlNameP in this) {
       const controlName = controlNameP.toString();
@@ -81,7 +87,7 @@ export abstract class AbstractModel {
         ((!controlName.startsWith('_') &&
           !controlName.startsWith('$') &&
           typeof this[controlName] !== 'function') ||
-          !!this._controls[controlName]) &&
+          this._controls[controlName]) &&
         !this._notControls[controlName]
       ) {
 
