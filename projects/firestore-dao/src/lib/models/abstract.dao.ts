@@ -13,7 +13,7 @@ import { AbstractModel } from './abstract.model';
 export abstract class AbstractDao<M extends AbstractModel> {
   protected collectionPath: string = Reflect.getMetadata('collectionPath', this.constructor);
 
-  constructor() {}
+  constructor() { }
 
   // ____________________________to be implemented by FirestoreAbstractDao________________________________
 
@@ -110,12 +110,14 @@ export abstract class AbstractDao<M extends AbstractModel> {
       ObjectHelper.createHiddenProperty(objToSave, 'collectionPath', ModelHelper.getPath(this.collectionPath, pathIds));
     }
 
+    const objReadyToSave = this.beforeSave(objToSave);
+
     console.log(
-      `super-dao ========== will save document document "${docId || objToSave._id || 'new'}" at ${
-        objToSave._collectionPath
+      `super-dao ========== will save document document "${docId || objReadyToSave._id || 'new'}" at ${
+      objReadyToSave._collectionPath
       }`
     );
-    return this.push(objToSave, docId, pathIds, overwrite);
+    return this.push(objReadyToSave, docId, pathIds, overwrite);
   }
 
   /**
@@ -157,4 +159,11 @@ export abstract class AbstractDao<M extends AbstractModel> {
   // 2)  getDynamicList(...)
   // 3) dynamicFilter .next(data);
   // https://github.com/angular/angularfire2/blob/master/docs/firestore/querying-collections.md#dynamic-querying
+
+  // ______________________________optionnal protected methods_________________________________
+
+  protected beforeSave(obj: M): M {
+    return obj;
+  }
+
 }
