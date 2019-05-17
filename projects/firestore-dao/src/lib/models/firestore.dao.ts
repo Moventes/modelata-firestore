@@ -1,7 +1,7 @@
 import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { filter, map, tap } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
 import { OrderBy, Where } from '../types/get-list-types.interface';
@@ -12,6 +12,10 @@ import { AbstractModel } from './abstract.model';
  * Abstract DAO class
  */
 export abstract class AbstractFirestoreDao<M extends AbstractModel> extends AbstractDao<M> {
+
+  private referenceCachedSubject: { [userId: string]: BehaviorSubject<M> } = {};
+  private referenceCachedSubscription: { [userId: string]: Subscription } = {};
+
   constructor(private db: AngularFirestore) {
     super();
   }
@@ -132,6 +136,29 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     } else {
       throw new Error('docRef is not compatible with this dao!');
     }
+  }
+
+  getByReferenceCached(docRef: DocumentReference): Observable<M> {
+    if (this.referenceCachedSubject[docRef.id]) {
+      return this.referenceCachedSubject[docRef.id].pipe(filter(v => !!v));
+    } else {
+      this.referenceCachedSubject[docRef.id] = new BehaviorSubject(null);
+      return this.referenceCachedSubject[docRef.id].pipe(
+        tap(() => {
+          if (!this.referenceCachedSubscription[docRef.id]) {
+            this.referenceCachedSubscription[docRef.id] =
+              this.getByReference(docRef).subscribe(doc => this.referenceCachedSubject[docRef.id].next(doc));
+          }
+        }),
+        filter(v => !!v)
+      );
+    }
+  }
+
+  clearCache() {
+    this.referenceCachedSubject = {};
+    Object.values(this.referenceCachedSubscription).forEach(subscr => subscr.unsubscribe());
+    this.referenceCachedSubscription = {};
   }
 
   /**
