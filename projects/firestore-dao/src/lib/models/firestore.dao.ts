@@ -139,20 +139,18 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   }
 
   getByReferenceCached(docRef: DocumentReference): Observable<M> {
-    if (this.referenceCachedSubject[docRef.id]) {
-      return this.referenceCachedSubject[docRef.id].pipe(filter(v => !!v));
-    } else {
+    if (!this.referenceCachedSubject[docRef.id]) {
       this.referenceCachedSubject[docRef.id] = new BehaviorSubject(null);
-      return this.referenceCachedSubject[docRef.id].pipe(
-        tap(() => {
-          if (!this.referenceCachedSubscription[docRef.id]) {
-            this.referenceCachedSubscription[docRef.id] =
-              this.getByReference(docRef).subscribe(doc => this.referenceCachedSubject[docRef.id].next(doc));
-          }
-        }),
-        filter(v => !!v)
-      );
     }
+    return this.referenceCachedSubject[docRef.id].pipe(
+      tap(() => {
+        if (!this.referenceCachedSubscription[docRef.id]) {
+          this.referenceCachedSubscription[docRef.id] =
+            this.getByReference(docRef).subscribe(doc => this.referenceCachedSubject[docRef.id].next(doc));
+        }
+      }),
+      filter(v => !!v)
+    );
   }
 
   clearCache() {
