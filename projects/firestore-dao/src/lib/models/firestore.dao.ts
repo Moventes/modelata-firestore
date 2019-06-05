@@ -1,4 +1,4 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query, QueryDocumentSnapshot, QuerySnapshot } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
@@ -202,22 +202,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
     }
 
-    return queryResult.get().pipe(
-      map((res: QuerySnapshot<M>) => {
-
-        console.info(`[firestore-dao] getList on ${queryResult.ref.path} return ${res.size} documents`);
-        return res.docs.map((queryDocumentSnapshot: QueryDocumentSnapshot<M>) => {
-          return this.getModelFromSnapshot(<DocumentSnapshot<M>>queryDocumentSnapshot);
+    return queryResult.snapshotChanges().pipe(
+      map((changeActionsList: DocumentChangeAction<M>[]) => {
+        return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
+          return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
         });
       })
     );
-    // return queryResult.snapshotChanges().pipe(
-    //   map((changeActionsList: DocumentChangeAction<M>[]) => {
-    //     return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
-    //       return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
-    //     });
-    //   })
-    // );
   }
 
   /**
