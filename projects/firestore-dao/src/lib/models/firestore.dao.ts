@@ -1,6 +1,6 @@
 import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
@@ -13,11 +13,17 @@ import { AbstractModel } from './abstract.model';
  */
 export abstract class AbstractFirestoreDao<M extends AbstractModel> extends AbstractDao<M> {
 
+  public static clearAllCacheAndSubscription = new Subject();
+
   private referenceCachedSubject: { [userId: string]: BehaviorSubject<M> } = {};
   private referenceCachedSubscription: { [userId: string]: Subscription } = {};
 
+
   constructor(private db: AngularFirestore) {
     super();
+    AbstractFirestoreDao.clearAllCacheAndSubscription.subscribe(() => {
+      this.clearCache();
+    });
   }
 
   /**
@@ -157,6 +163,12 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     this.referenceCachedSubject = {};
     Object.values(this.referenceCachedSubscription).forEach(subscr => subscr.unsubscribe());
     this.referenceCachedSubscription = {};
+
+    if (this['cachedSubscription']) {
+      Object.values(this.referenceCachedSubscription).forEach(subscr => subscr.unsubscribe());
+      this['cachedSubscription'] = {};
+      this['cachedSubject'] = {};
+    }
   }
 
   /**
