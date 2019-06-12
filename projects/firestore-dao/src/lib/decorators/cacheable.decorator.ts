@@ -19,7 +19,7 @@ export function Cacheable(getFctIdFromParamsName: string) {
                 target[getFctIdFromParamsName] || defaultParamsToString :
                 defaultParamsToString;
             const methodId = `${propertyName}(${getFctIdFromParams(...args)})`;
-            if (!createCache && !target['cachedSubject'][methodId]) {
+            if (createCache || target['cachedSubject'][methodId]) {
                 if (!target['cachedSubject']) {
                     target['cachedSubject'] = {};
                 }
