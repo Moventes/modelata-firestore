@@ -187,12 +187,27 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     const orderByStr = orderBy ? `${orderBy.field}${orderBy.operator}` : '';
     return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArrayStr},${orderByStr},${limit}`;
   }
-
+  /**
+    * @inheritDoc
+    */
+  public getList(
+    pathIds?: Array<string>,
+    whereArray?: Array<Where>,
+    orderBy?: OrderBy,
+    limit?: number,
+    cacheable = this.cacheable,
+  ): Observable<Array<M>> {
+    return this.getListCacheable(pathIds,
+      whereArray,
+      orderBy,
+      limit,
+      cacheable);
+  }
   /**
    * @inheritDoc
    */
   @Cacheable('getListToStringForCacheable')
-  public getList(
+  protected getListCacheable(
     pathIds?: Array<string>,
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
