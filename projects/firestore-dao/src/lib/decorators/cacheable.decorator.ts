@@ -5,7 +5,7 @@ function defaultParamsToString(...args): string {
     return '';
 }
 
-export function Cacheable(getFctIdFromParams = defaultParamsToString) {
+export function Cacheable(getFctIdFromParamsName: string) {
     return (
         target: Object,
         propertyName: string,
@@ -15,6 +15,9 @@ export function Cacheable(getFctIdFromParams = defaultParamsToString) {
 
         propertyDesciptor.value = function (...args: any[]) {
             const createCache = args.pop();
+            const getFctIdFromParams = getFctIdFromParamsName ?
+                target[getFctIdFromParamsName] || defaultParamsToString :
+                defaultParamsToString;
             const methodId = `${propertyName}(${getFctIdFromParams(...args)})`;
             if (!createCache && !target['cachedSubject'][methodId]) {
                 if (!target['cachedSubject']) {

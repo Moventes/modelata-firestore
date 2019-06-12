@@ -1,8 +1,8 @@
 import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { Cacheable } from 'firestore-dao/public_api';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Cacheable } from '../decorators/cacheable.decorator';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
 import { OrderBy, Where } from '../types/get-list-types.interface';
@@ -157,7 +157,9 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId));
   }
 
-  @Cacheable((docPath: string) => docPath)
+  getByPathToStringForCacheable(docPath: string) { return docPath; }
+
+  @Cacheable('getByPathToStringForCacheable')
   getByPath(docPath: string, cacheable = this.cacheable): Observable<M> {
     return this.db
       .doc<M>(docPath)
@@ -166,24 +168,26 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   }
 
   whereArrayToString(whereArray: Array<Where>): string {
-    return '[' + whereArray.map((where: Where) =>
-      `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`
-    ).join(',') + ']';
+    return '[' + whereArray.map(function (where: Where) {
+      return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
+    }).join(',') + ']';
   }
 
   orderByToString(orderBy: OrderBy): string {
     return `${orderBy.field}${orderBy.operator}`;
   }
 
+  getListToStringForCacheable(pathIds?: Array<string>,
+    whereArray?: Array<Where>,
+    orderBy?: OrderBy,
+    limit?: number) {
+    return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArray && whereArray.length ? this.whereArrayToString(whereArray) : 'undefined'},${orderBy ? this.orderByToString(orderBy) : ''},${limit}`;
+  }
+
   /**
    * @inheritDoc
    */
-  @Cacheable((
-    pathIds?: Array<string>,
-    whereArray?: Array<Where>,
-    orderBy?: OrderBy,
-    limit?: number
-  ) => `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArray && whereArray.length ? this.whereArrayToString(whereArray) : 'undefined'},${orderBy ? this.orderByToString(orderBy) : ''},${limit}`)
+  @Cacheable('getListToStringForCacheable')
   public getList(
     pathIds?: Array<string>,
     whereArray?: Array<Where>,
