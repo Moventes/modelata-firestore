@@ -25,6 +25,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     });
   }
 
+  voidFn(...args) { return args; }
+
   /**
    * @inheritDoc
    */
@@ -129,6 +131,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   }
 
   public getByReference(docRef: DocumentReference, cacheable = this.cacheable): Observable<M> {
+    console.log('getByReference of ', docRef.path, docRef.id);
+
     if (this.isCompatible(docRef)) {
       if (docRef && docRef.parent) {
         return this.getByPath(docRef.path, cacheable);
@@ -154,34 +158,34 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
    * @inheritDoc
    */
   public getById(docId: string, pathIds?: Array<string>, cacheable = this.cacheable): Observable<M> {
-    return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId));
+    console.log('getById of ', docId, pathIds);
+    const path = ModelHelper.getPath(this.collectionPath, pathIds, docId);
+    console.log(`getById ModelHelper.getPath return ${path} for ${this.collectionPath},${pathIds},${docId}`);
+    return this.getByPath(path, cacheable);
   }
 
   getByPathToStringForCacheable(docPath: string) { return docPath; }
 
   @Cacheable('getByPathToStringForCacheable')
   getByPath(docPath: string, cacheable = this.cacheable): Observable<M> {
+    this.voidFn(cacheable);
+    console.log('getByPath of ', docPath);
     return this.db
       .doc<M>(docPath)
       .snapshotChanges()
       .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
   }
 
-  whereArrayToString(whereArray: Array<Where>): string {
-    return '[' + whereArray.map(function (where: Where) {
-      return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
-    }).join(',') + ']';
-  }
-
-  orderByToString(orderBy: OrderBy): string {
-    return `${orderBy.field}${orderBy.operator}`;
-  }
 
   getListToStringForCacheable(pathIds?: Array<string>,
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
     limit?: number) {
-    return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArray && whereArray.length ? this.whereArrayToString(whereArray) : 'undefined'},${orderBy ? this.orderByToString(orderBy) : ''},${limit}`;
+    const whereArrayStr = whereArray && whereArray.length ? '[' + whereArray.map(function (where: Where) {
+      return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
+    }).join(',') + ']' : 'undefined';
+    const orderByStr = orderBy ? `${orderBy.field}${orderBy.operator}` : '';
+    return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArrayStr},${orderByStr},${limit}`;
   }
 
   /**
@@ -195,6 +199,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     limit?: number,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
+    this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
 
     if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined)) {
