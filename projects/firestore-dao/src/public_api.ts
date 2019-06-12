@@ -2,7 +2,7 @@
  * Public API Surface of @modelata.firestore
  */
 
-export * from './lib/decorators/cacheable.decorator';
+// export * from './lib/decorators/cacheable.decorator';
 export * from './lib/decorators/collection-path.decorator';
 export * from './lib/decorators/enumerable.decorator';
 export * from './lib/decorators/form.decorator';

@@ -14,26 +14,31 @@ export function Cacheable(getFctIdFromParams = defaultParamsToString) {
         const method = propertyDesciptor.value;
 
         propertyDesciptor.value = function (...args: any[]) {
+            const createCache = args.pop();
             const methodId = `${propertyName}(${getFctIdFromParams(...args)})`;
-            if (!target['cachedSubject']) {
-                target['cachedSubject'] = {};
+            if (!createCache && !target['cachedSubject'][methodId]) {
+                if (!target['cachedSubject']) {
+                    target['cachedSubject'] = {};
+                }
+                if (!target['cachedSubscription']) {
+                    target['cachedSubscription'] = {};
+                }
+                if (!target['cachedSubject'][methodId]) {
+                    target['cachedSubject'][methodId] = new BehaviorSubject('BehaviorSubjectInit');
+                }
+                return target['cachedSubject'][methodId].pipe(
+                    tap(() => {
+                        if (!target['cachedSubscription'][methodId]) {
+                            const obs = method.apply(this, args);
+                            target['cachedSubscription'][methodId] =
+                                obs.subscribe(doc => target['cachedSubject'][methodId].next(doc));
+                        }
+                    }),
+                    filter(v => v !== 'BehaviorSubjectInit')
+                );
+            } else {
+                return method.apply(this, args);
             }
-            if (!target['cachedSubscription']) {
-                target['cachedSubscription'] = {};
-            }
-            if (!target['cachedSubject'][methodId]) {
-                target['cachedSubject'][methodId] = new BehaviorSubject('BehaviorSubjectInit');
-            }
-            return target['cachedSubject'][methodId].pipe(
-                tap(() => {
-                    if (!target['cachedSubscription'][methodId]) {
-                        const obs = method.apply(this, args);
-                        target['cachedSubscription'][methodId] =
-                            obs.subscribe(doc => target['cachedSubject'][methodId].next(doc));
-                    }
-                }),
-                filter(v => v !== 'BehaviorSubjectInit')
-            );
         };
         return propertyDesciptor;
     };

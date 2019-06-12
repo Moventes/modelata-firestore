@@ -1,7 +1,8 @@
 import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { BehaviorSubject, Observable, Subject, Subscription } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { Cacheable } from 'firestore-dao/public_api';
+import { Observable, Subject, Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
 import { OrderBy, Where } from '../types/get-list-types.interface';
@@ -14,13 +15,11 @@ import { AbstractModel } from './abstract.model';
 export abstract class AbstractFirestoreDao<M extends AbstractModel> extends AbstractDao<M> {
 
   public static clearAllCacheAndSubscription = new Subject();
+  public cacheable: boolean;
 
-  private referenceCachedSubject: { [userId: string]: BehaviorSubject<M> } = {};
-  private referenceCachedSubscription: { [userId: string]: Subscription } = {};
-
-
-  constructor(private db: AngularFirestore) {
+  constructor(private db: AngularFirestore, cacheable = true) {
     super();
+    this.cacheable = cacheable;
     AbstractFirestoreDao.clearAllCacheAndSubscription.subscribe(() => {
       this.clearCache();
     });
@@ -129,13 +128,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     return ModelHelper.isCompatiblePath(this.collectionPath, doc['path'] || doc['_collectionPath']);
   }
 
-  public getByReference(docRef: DocumentReference): Observable<M> {
+  public getByReference(docRef: DocumentReference, cacheable = this.cacheable): Observable<M> {
     if (this.isCompatible(docRef)) {
       if (docRef && docRef.parent) {
-        return this.db
-          .doc<M>(docRef)
-          .snapshotChanges()
-          .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
+        return this.getByPath(docRef.path, cacheable);
       } else {
         throw new Error('getByReference missing parameter : dbRef.');
       }
@@ -144,28 +140,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
   }
 
-  getByReferenceCached(docRef: DocumentReference): Observable<M> {
-    if (!this.referenceCachedSubject[docRef.id]) {
-      this.referenceCachedSubject[docRef.id] = new BehaviorSubject(null);
-    }
-    return this.referenceCachedSubject[docRef.id].pipe(
-      tap(() => {
-        if (!this.referenceCachedSubscription[docRef.id]) {
-          this.referenceCachedSubscription[docRef.id] =
-            this.getByReference(docRef).subscribe(doc => this.referenceCachedSubject[docRef.id].next(doc));
-        }
-      }),
-      filter(v => !!v)
-    );
-  }
+
 
   clearCache() {
-    this.referenceCachedSubject = {};
-    Object.values(this.referenceCachedSubscription).forEach(subscr => subscr.unsubscribe());
-    this.referenceCachedSubscription = {};
-
     if (this['cachedSubscription']) {
-      Object.values(this.referenceCachedSubscription).forEach(subscr => subscr.unsubscribe());
+      Object.values(this['cachedSubscription']).forEach((subscr: Subscription) => subscr.unsubscribe());
       this['cachedSubscription'] = {};
       this['cachedSubject'] = {};
     }
@@ -174,21 +153,43 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   /**
    * @inheritDoc
    */
-  public getById(docId: string, pathIds?: Array<string>): Observable<M> {
+  public getById(docId: string, pathIds?: Array<string>, cacheable = this.cacheable): Observable<M> {
+    return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId));
+  }
+
+  @Cacheable((docPath: string) => docPath)
+  getByPath(docPath: string, cacheable = this.cacheable): Observable<M> {
     return this.db
-      .doc<M>(ModelHelper.getPath(this.collectionPath, pathIds, docId))
+      .doc<M>(docPath)
       .snapshotChanges()
       .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
+  }
+
+  whereArrayToString(whereArray: Array<Where>): string {
+    return '[' + whereArray.map((where: Where) =>
+      `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`
+    ).join(',') + ']';
+  }
+
+  orderByToString(orderBy: OrderBy): string {
+    return `${orderBy.field}${orderBy.operator}`;
   }
 
   /**
    * @inheritDoc
    */
-  public getList(
+  @Cacheable((
     pathIds?: Array<string>,
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
     limit?: number
+  ) => `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArray && whereArray.length ? this.whereArrayToString(whereArray) : 'undefined'},${orderBy ? this.orderByToString(orderBy) : ''},${limit}`)
+  public getList(
+    pathIds?: Array<string>,
+    whereArray?: Array<Where>,
+    orderBy?: OrderBy,
+    limit?: number,
+    cacheable = this.cacheable,
   ): Observable<Array<M>> {
     let queryResult: AngularFirestoreCollection<M>;
 
