@@ -131,7 +131,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   }
 
   public getByReference(docRef: DocumentReference, cacheable = this.cacheable): Observable<M> {
-    console.log('getByReference of ', docRef.path, docRef.id);
+    // console.log('getByReference of ', docRef.path, docRef.id);
 
     if (this.isCompatible(docRef)) {
       if (docRef && docRef.parent) {
@@ -158,10 +158,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
    * @inheritDoc
    */
   public getById(docId: string, pathIds?: Array<string>, cacheable = this.cacheable): Observable<M> {
-    console.log('getById of ', docId, pathIds);
-    const path = ModelHelper.getPath(this.collectionPath, pathIds, docId);
-    console.log(`getById ModelHelper.getPath return ${path} for ${this.collectionPath},${pathIds},${docId}`);
-    return this.getByPath(path, cacheable);
+    // console.log('getById of ', docId, pathIds);
+    // const path = ModelHelper.getPath(this.collectionPath, pathIds, docId);
+    // console.log(`getById ModelHelper.getPath return ${path} for ${this.collectionPath},${pathIds},${docId}`);
+    return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId), cacheable);
   }
 
   getByPathToStringForCacheable(docPath: string) { return docPath; }
@@ -169,7 +169,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   @Cacheable('getByPathToStringForCacheable')
   getByPath(docPath: string, cacheable = this.cacheable): Observable<M> {
     this.voidFn(cacheable);
-    console.log('getByPath of ', docPath);
+    // console.log('getByPath of ', docPath);
     return this.db
       .doc<M>(docPath)
       .snapshotChanges()
