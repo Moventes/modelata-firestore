@@ -7,6 +7,7 @@
     "start": "ng serve",
     "build": "ng build firestore-dao",
     "publish:library": "npm run build && cd dist/firestore-dao && npm publish",
+    "link:library": "npm run build && cd dist/firestore-dao && npm link",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
