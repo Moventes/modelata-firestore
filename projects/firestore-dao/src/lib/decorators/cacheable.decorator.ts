@@ -41,7 +41,7 @@ export function Cacheable(getFctIdFromParamsName: string) {
                     filter(v => v !== 'BehaviorSubjectInit')
                 );
             } else {
-                return method.apply(this, args);
+                return method.apply(this, [...args, createCache]);
             }
         };
         return propertyDesciptor;
