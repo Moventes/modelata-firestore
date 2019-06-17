@@ -32,7 +32,7 @@ export function Cacheable(getFctIdFromParamsName: string) {
                 return target['cachedSubject'][methodId].pipe(
                     tap(() => {
                         if (!target['cachedSubscription'][methodId]) {
-                            console.log('@Cacheable subscribe to ', methodId);
+                            // console.log('@Cacheable subscribe to ', methodId);
                             const obs = method.apply(this, args);
                             target['cachedSubscription'][methodId] =
                                 obs.subscribe(doc => target['cachedSubject'][methodId].next(doc));
