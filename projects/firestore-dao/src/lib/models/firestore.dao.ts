@@ -91,6 +91,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
             ObjectHelper.createHiddenProperty(dbObj, 'id', docId);
           }
           return dbObj;
+        }).catch(error => {
+          console.error(error);
+          console.log('error for ', dbObj);
+          return Promise.reject(error);
         });
     } else {
       return this.db
