@@ -1,7 +1,7 @@
 import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { Observable, Subject, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, Subject, Subscription, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { Cacheable } from '../decorators/cacheable.decorator';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
@@ -177,7 +177,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     return this.db
       .doc<M>(docPath)
       .snapshotChanges()
-      .pipe(map(doc => this.getModelFromSnapshot(doc.payload)));
+      .pipe(
+        catchError((err) => {
+          console.error(`an error occurred in getByPath with params: ${docPath}`);
+          return throwError(err);
+        }),
+        map(doc => this.getModelFromSnapshot(doc.payload))
+      );
   }
 
 
@@ -244,6 +250,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
 
     return queryResult.snapshotChanges().pipe(
+      catchError((err) => {
+        // tslint:disable-next-line:max-line-length
+        console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+        return throwError(err);
+      }),
       map((changeActionsList: DocumentChangeAction<M>[]) => {
         return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
           return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
