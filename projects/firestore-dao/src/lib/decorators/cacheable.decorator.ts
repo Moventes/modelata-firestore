@@ -19,9 +19,7 @@ export function Cacheable(getFctIdFromParamsName: string) {
                 target[getFctIdFromParamsName] || defaultParamsToString :
                 defaultParamsToString;
             const methodId = `dao(${this.collectionPath}).${propertyName}(${getFctIdFromParams(...args)})`;
-            if (!createCache || (target['cachedSubject'] && !target['cachedSubject'][methodId])) {
-                return method.apply(this, [...args, createCache]);
-            } else {
+            if (createCache || (target['cachedSubject'] && target['cachedSubject'][methodId])) {
                 if (!target['cachedSubject']) {
                     target['cachedSubject'] = {};
                 }
@@ -42,6 +40,8 @@ export function Cacheable(getFctIdFromParamsName: string) {
                     }),
                     filter(v => v !== 'BehaviorSubjectInit')
                 );
+            } else {
+                return method.apply(this, [...args, createCache]);
             }
         };
         return propertyDesciptor;
