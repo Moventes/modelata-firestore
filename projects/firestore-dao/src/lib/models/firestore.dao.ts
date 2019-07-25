@@ -206,12 +206,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     cacheable = this.cacheable,
+    startAfter?: M,
   ): Observable<Array<M>> {
     return this.getListCacheable(pathIds,
       whereArray,
       orderBy,
       limit,
-      cacheable);
+      cacheable,
+      startAfter);
   }
   /**
    * @inheritDoc
@@ -223,11 +225,12 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     cacheable = this.cacheable,
+    startAfter?: M,
   ): Observable<Array<M>> {
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
 
-    if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined)) {
+    if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined) || (startAfter !== null && startAfter !== undefined)) {
       const specialQuery = ref => {
         let query: Query = ref;
         if (whereArray && whereArray.length > 0) {
@@ -240,6 +243,9 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         }
         if (limit !== null && limit !== undefined && limit > -1) {
           query = query.limit(limit);
+        }
+        if (startAfter !== null && startAfter !== undefined) {
+          query.startAfter(startAfter);
         }
         return query;
       };
