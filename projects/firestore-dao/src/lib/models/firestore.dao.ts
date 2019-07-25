@@ -5,7 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 import { Cacheable } from '../decorators/cacheable.decorator';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
-import { OrderBy, Where } from '../types/get-list-types.interface';
+import { OrderBy, Where, Offset } from '../types/get-list-types.interface';
 import { AbstractDao } from './abstract.dao';
 import { AbstractModel } from './abstract.model';
 
@@ -206,14 +206,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     cacheable = this.cacheable,
-    startAfter?: M,
+    offset?: Offset<M>,
   ): Observable<Array<M>> {
     return this.getListCacheable(pathIds,
       whereArray,
       orderBy,
       limit,
       cacheable,
-      startAfter);
+      offset);
   }
   /**
    * @inheritDoc
@@ -225,12 +225,12 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     cacheable = this.cacheable,
-    startAfter?: M,
+    offset?: Offset<M>,
   ): Observable<Array<M>> {
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
 
-    if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined) || (startAfter !== null && startAfter !== undefined)) {
+    if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined) || (offset && (offset.endBefore || offset.startAfter))) {
       const specialQuery = ref => {
         let query: Query = ref;
         if (whereArray && whereArray.length > 0) {
@@ -244,8 +244,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         if (limit !== null && limit !== undefined && limit > -1) {
           query = query.limit(limit);
         }
-        if (startAfter !== null && startAfter !== undefined) {
-          query.startAfter(startAfter);
+        if (offset && offset.endBefore) {
+          query.endBefore(offset.endBefore);
+        }
+        if (offset && offset.startAfter) {
+          query.startAfter(offset.startAfter);
         }
         return query;
       };
