@@ -8,3 +8,8 @@ export interface OrderBy {
   field: string;
   operator: firebase.firestore.OrderByDirection;
 }
+
+export interface Offset<M> {
+  endBefore?: M;
+  startAfter?: M;
+}

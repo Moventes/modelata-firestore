@@ -4,7 +4,7 @@ import 'reflect-metadata';
 import { Observable } from 'rxjs';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
-import { OrderBy, Where } from './../types/get-list-types.interface';
+import { OrderBy, Where, Offset } from './../types/get-list-types.interface';
 import { AbstractModel } from './abstract.model';
 
 /**
@@ -75,7 +75,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param orderBy orderBy object ({field, operator})
    * @param limit number of results returned
    * @param cacheable use cache
-   * @param startAfter last model of previous page for pagination
+   * @param offset last model of previous page for pagination or first model of next page ({startAfter?, endBefore?})
    */
   public abstract getList(
     pathIds?: Array<string>,
@@ -83,7 +83,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
     orderBy?: OrderBy,
     limit?: number,
     cacheable?: boolean,
-    startAfter?: M,
+    offset?: Offset<M>,
   ): Observable<Array<M>>;
 
   /**
