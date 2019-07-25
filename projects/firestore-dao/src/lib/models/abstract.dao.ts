@@ -68,11 +68,22 @@ export abstract class AbstractDao<M extends AbstractModel> {
    */
   public abstract getById(docId: string, pathIds?: Array<string>): Observable<M>;
 
+  /**
+   * Return an observable of an array of models from database using the specified filters
+   * @param pathIds array of ids used in path (in right order)
+   * @param whereArray array of where conditions ({field, operator, value})
+   * @param orderBy orderBy object ({field, operator})
+   * @param limit number of results returned
+   * @param cacheable use cache
+   * @param startAfter last model of previous page for pagination
+   */
   public abstract getList(
     pathIds?: Array<string>,
-    where?: Array<Where>,
+    whereArray?: Array<Where>,
     orderBy?: OrderBy,
-    limit?: number
+    limit?: number,
+    cacheable?: boolean,
+    startAfter?: M,
   ): Observable<Array<M>>;
 
   /**
