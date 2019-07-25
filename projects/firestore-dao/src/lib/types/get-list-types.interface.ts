@@ -1,3 +1,5 @@
+import { DocumentSnapshot } from '@angular/fire/firestore';
+
 export interface Where {
   field: string;
   operator: firebase.firestore.WhereFilterOp;
@@ -10,6 +12,6 @@ export interface OrderBy {
 }
 
 export interface Offset<M> {
-  endBefore?: M;
-  startAfter?: M;
+  endBefore?: DocumentSnapshot<M>;
+  startAfter?: DocumentSnapshot<M>;
 }
