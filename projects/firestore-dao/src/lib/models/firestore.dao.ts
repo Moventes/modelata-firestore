@@ -9,6 +9,8 @@ import { OrderBy, Where, Offset } from '../types/get-list-types.interface';
 import { AbstractDao } from './abstract.dao';
 import { AbstractModel } from './abstract.model';
 
+
+
 /**
  * Abstract DAO class
  */
@@ -229,14 +231,19 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     offset?: Offset<M>,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
+    console.log(whereArray, orderBy, limit, offset);
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
-
-    if ((whereArray && whereArray.length > 0) || orderBy || (limit !== null && limit !== undefined) || (offset && (offset.endBefore || offset.startAfter))) {
-      const specialQuery = ref => {
+    if (
+      (whereArray && whereArray.length > 0) ||
+      orderBy ||
+      (limit !== null && limit !== undefined) ||
+      (offset && (offset.endBefore || offset.startAfter))
+    ) {
+      const specialQuery = (ref) => {
         let query: Query = ref;
         if (whereArray && whereArray.length > 0) {
-          whereArray.forEach(where => {
+          whereArray.forEach((where) => {
             query = query.where(where.field, where.operator, where.value);
           });
         }
@@ -244,32 +251,29 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
           query = query.orderBy(orderBy.field, orderBy.operator);
         }
         if (offset && offset.startAfter) {
-          query.startAfter(offset.startAfter);
+          query = query.startAfter(offset.startAfter);
         }
         if (offset && offset.endBefore) {
-          query.endBefore(offset.endBefore);
+          query = query.endBefore(offset.endBefore);
         }
-        if (limit !== null && limit !== undefined && limit > -1) {
+        if (limit) {
           query = query.limit(limit);
         }
         return query;
-      };
+      }
 
-      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds), specialQuery);
+      queryResult = this.db.collection('companies', specialQuery);
     } else {
-      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
+      queryResult = this.db.collection('companies');
     }
-
-    return queryResult.snapshotChanges().pipe(
+    return queryResult.get().pipe(
       catchError((err) => {
         // tslint:disable-next-line:max-line-length
         console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
         return throwError(err);
       }),
-      map((changeActionsList: DocumentChangeAction<M>[]) => {
-        return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
-          return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
-        });
+      map((companiesSnap) => {
+        return companiesSnap.docs.map((companyDoc: DocumentSnapshot<M>) => this.getModelFromSnapshot(companyDoc));
       })
     );
   }
