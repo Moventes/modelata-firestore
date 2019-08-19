@@ -40,11 +40,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
           pathIds.push(pathSplitted[i]);
         }
       }
-      return this.getModel(
+      const model = this.getModel(
         { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache },
         documentSnapshot.id,
         pathIds
       );
+      ObjectHelper.createHiddenProperty(model, 'snapshot', documentSnapshot);
+      return model;
     } else {
       console.error(
         '[firestoreDao] - getNewModelFromDb return null because dbObj.exists is null or false. dbObj :',
@@ -212,8 +214,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       whereArray,
       orderBy,
       limit,
-      cacheable,
-      offset);
+      offset,
+      cacheable);
   }
   /**
    * @inheritDoc
@@ -224,8 +226,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
     limit?: number,
-    cacheable = this.cacheable,
     offset?: Offset<M>,
+    cacheable = this.cacheable,
   ): Observable<Array<M>> {
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
@@ -241,14 +243,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         if (orderBy) {
           query = query.orderBy(orderBy.field, orderBy.operator);
         }
-        if (limit !== null && limit !== undefined && limit > -1) {
-          query = query.limit(limit);
+        if (offset && offset.startAfter) {
+          query.startAfter(offset.startAfter);
         }
         if (offset && offset.endBefore) {
           query.endBefore(offset.endBefore);
         }
-        if (offset && offset.startAfter) {
-          query.startAfter(offset.startAfter);
+        if (limit !== null && limit !== undefined && limit > -1) {
+          query = query.limit(limit);
         }
         return query;
       };
