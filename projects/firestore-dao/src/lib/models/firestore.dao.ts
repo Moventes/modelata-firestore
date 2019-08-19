@@ -256,15 +256,15 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         if (offset && offset.endBefore) {
           query = query.endBefore(offset.endBefore);
         }
-        if (limit) {
+        if (limit !== null && limit !== undefined && limit > -1) {
           query = query.limit(limit);
         }
         return query;
       }
 
-      queryResult = this.db.collection('companies', specialQuery);
+      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds), specialQuery);
     } else {
-      queryResult = this.db.collection('companies');
+      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
     }
     return queryResult.get().pipe(
       catchError((err) => {
@@ -272,8 +272,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
         return throwError(err);
       }),
-      map((companiesSnap) => {
-        return companiesSnap.docs.map((companyDoc: DocumentSnapshot<M>) => this.getModelFromSnapshot(companyDoc));
+      map((documentsSnap) => {
+        return documentsSnap.docs.map((document: DocumentSnapshot<M>) => this.getModelFromSnapshot(document));
       })
     );
   }
