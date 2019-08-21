@@ -148,9 +148,10 @@ export abstract class AbstractDao<M extends AbstractModel> {
     if (!partialDbObj || !docId || !this.collectionPath) {
       return Promise.reject('required attrs');
     } else {
-      return this.beforeUpdate(partialDbObj, docId).then((partialDbObjToSave) => {
-        return this.pushData(partialDbObjToSave, docId, pathIds);
-      });
+      return this.pushData(partialDbObj, docId, pathIds)
+        .then((result) => {
+          return this.afterUpdate(result, docId);
+        });
     }
   }
 
@@ -179,7 +180,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
     return obj;
   }
 
-  protected beforeUpdate(obj: Object, id?: string): Promise<Object> {
+  protected afterUpdate(obj: Object, id?: string): Promise<Object> {
     return Promise.resolve(obj);
   }
 }
