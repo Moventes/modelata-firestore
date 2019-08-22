@@ -1,11 +1,11 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { Cacheable } from '../decorators/cacheable.decorator';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
-import { OrderBy, Where, Offset } from '../types/get-list-types.interface';
+import { Offset, OrderBy, Where } from '../types/get-list-types.interface';
 import { AbstractDao } from './abstract.dao';
 import { AbstractModel } from './abstract.model';
 
@@ -184,7 +184,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       .pipe(
         catchError((err) => {
           console.error(`an error occurred in getByPath with params: ${docPath}`);
-          return throwError(err);
+          throw new Error(err);
         }),
         map(doc => this.getModelFromSnapshot(doc.payload))
       );
