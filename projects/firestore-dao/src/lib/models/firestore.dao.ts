@@ -250,8 +250,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         if (orderBy) {
           query = query.orderBy(orderBy.field, orderBy.operator);
         }
+        if (offset && offset.startAt) {
+          query = query.startAt(offset.startAt);
+        }
         if (offset && offset.startAfter) {
           query = query.startAfter(offset.startAfter);
+        }
+        if (offset && offset.endAt) {
+          query = query.endAt(offset.endAt);
         }
         if (offset && offset.endBefore) {
           query = query.endBefore(offset.endBefore);

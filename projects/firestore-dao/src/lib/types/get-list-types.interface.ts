@@ -12,6 +12,8 @@ export interface OrderBy {
 }
 
 export interface Offset<M> {
-  endBefore?: DocumentSnapshot<M>;
+  startAt?: DocumentSnapshot<M>;
   startAfter?: DocumentSnapshot<M>;
+  endAt?: DocumentSnapshot<M>;
+  endBefore?: DocumentSnapshot<M>;
 }
