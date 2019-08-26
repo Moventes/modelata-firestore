@@ -1,4 +1,4 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query, DocumentChangeAction } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -231,7 +231,6 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     offset?: Offset<M>,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
-    console.log(whereArray, orderBy, limit, offset);
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
     if (
