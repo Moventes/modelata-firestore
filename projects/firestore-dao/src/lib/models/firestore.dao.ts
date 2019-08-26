@@ -1,4 +1,4 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query, DocumentChangeAction } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -272,14 +272,17 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     } else {
       queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
     }
-    return queryResult.get().pipe(
+
+    return queryResult.snapshotChanges().pipe(
       catchError((err) => {
         // tslint:disable-next-line:max-line-length
         console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
         return throwError(err);
       }),
-      map((documentsSnap) => {
-        return documentsSnap.docs.map((document: DocumentSnapshot<M>) => this.getModelFromSnapshot(document));
+      map((changeActionsList: DocumentChangeAction<M>[]) => {
+        return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
+          return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
+        });
       })
     );
   }
