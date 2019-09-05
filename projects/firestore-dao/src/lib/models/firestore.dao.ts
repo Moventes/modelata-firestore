@@ -43,11 +43,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         }
       }
       const model = this.getModel(
-        { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache },
+        { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache, _snapshot: documentSnapshot },
         documentSnapshot.id,
         pathIds
       );
-      ObjectHelper.createHiddenProperty(model, 'snapshot', documentSnapshot);
       return model;
     } else {
       console.error(
@@ -265,7 +264,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
           query = query.limit(limit);
         }
         return query;
-      }
+      };
 
       queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds), specialQuery);
     } else {

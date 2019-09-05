@@ -1,3 +1,4 @@
+import { DocumentSnapshot } from '@angular/fire/firestore';
 import { Validators } from '@angular/forms';
 import { Enumerable } from '../decorators/enumerable.decorator';
 import { MissingFieldNotifier } from '../helpers/missing-field-notifier';
@@ -13,6 +14,9 @@ export abstract class AbstractModel {
 
   @Enumerable(false)
   public _collectionPath: string;
+
+  @Enumerable(false)
+  public _snapshot: DocumentSnapshot<AbstractModel>;
 
   @Enumerable(false)
   protected _controls: Object;
@@ -64,6 +68,10 @@ export abstract class AbstractModel {
 
     if (dbObj && dbObj['_fromCache']) {
       ObjectHelper.createHiddenProperty(this, 'fromCache', dbObj['_fromCache']);
+    }
+
+    if (dbObj && dbObj['_snapshot']) {
+      ObjectHelper.createHiddenProperty(this, 'snapshot', dbObj['_snapshot']);
     }
 
     if (dbObj && dbObj['_updateDate'] && typeof dbObj['_updateDate'].toDate === 'function') {
