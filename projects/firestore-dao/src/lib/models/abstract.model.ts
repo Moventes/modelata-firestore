@@ -9,6 +9,7 @@ import { ObjectHelper } from '../helpers/object.helper';
  * Abstract Model class
  */
 export abstract class AbstractModel {
+
   @Enumerable(false)
   public _id: string;
 
@@ -16,7 +17,7 @@ export abstract class AbstractModel {
   public _collectionPath: string;
 
   @Enumerable(false)
-  public _snapshot: DocumentSnapshot<AbstractModel>;
+  public _snapshot: DocumentSnapshot<this>;
 
   @Enumerable(false)
   protected _controls: Object;
