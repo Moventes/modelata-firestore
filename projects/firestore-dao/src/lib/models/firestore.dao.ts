@@ -194,7 +194,8 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
     limit?: number) {
-    const whereArrayStr = whereArray && whereArray.length ? '[' + whereArray.map(function (where: Where) {
+    const whereArrayStr = whereArray && whereArray.length ? '[' + whereArray.map(function (wherep: Where) {
+      const where = wherep || { field: 'null', operator: '', value: '' };
       return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
     }).join(',') + ']' : 'undefined';
     const orderByStr = orderBy ? `${orderBy.field}${orderBy.operator}` : '';
