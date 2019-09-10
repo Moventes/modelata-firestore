@@ -242,7 +242,9 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         let query: Query = ref;
         if (whereArray && whereArray.length > 0) {
           whereArray.forEach((where) => {
-            query = query.where(where.field, where.operator, where.value);
+            if (where) {
+              query = query.where(where.field, where.operator, where.value);
+            }
           });
         }
         if (orderBy) {
