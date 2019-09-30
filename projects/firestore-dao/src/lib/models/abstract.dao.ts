@@ -75,7 +75,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param orderBy orderBy object ({field, operator})
    * @param limit number of results returned
    * @param cacheable use cache
-   * @param offset last document snapshot of previous page for pagination or first document snapshot of next page ({startAfter?, endBefore?})
+   * @param offset boundary document snapshot ({startAfter?, endBefore?, startAt?, endAt?})
    */
   public abstract getList(
     pathIds?: Array<string>,

@@ -59,7 +59,12 @@ export abstract class AbstractModel {
       ObjectHelper.createHiddenProperty(this, 'id', dbObj['_id']);
     }
 
-    if (dbObj && dbObj['_collectionPath'] && !(<string>dbObj['_collectionPath']).includes('?') && (!path || !pathIds || pathIds.length === 0)) {
+    if (
+      dbObj
+      && dbObj['_collectionPath']
+      && !(<string>dbObj['_collectionPath']).includes('?')
+      && (!path || !pathIds || pathIds.length === 0)
+    ) {
       ObjectHelper.createHiddenProperty(this, 'collectionPath', dbObj['_collectionPath']);
     } else if (path) {
       ObjectHelper.createHiddenProperty(this, 'collectionPath', ModelHelper.getPath(path, pathIds));

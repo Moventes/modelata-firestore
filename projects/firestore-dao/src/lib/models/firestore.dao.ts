@@ -1,4 +1,11 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query, DocumentChangeAction } from '@angular/fire/firestore';
+import {
+  AngularFirestore,
+  AngularFirestoreCollection,
+  DocumentReference,
+  DocumentSnapshot,
+  Query,
+  DocumentChangeAction
+} from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
