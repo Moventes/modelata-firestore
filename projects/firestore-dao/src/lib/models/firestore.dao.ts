@@ -1,4 +1,4 @@
-import { AngularFirestore, AngularFirestoreCollection, DocumentChangeAction, DocumentReference, DocumentSnapshot, Query } from '@angular/fire/firestore';
+import { AngularFirestore, AngularFirestoreCollection, DocumentReference, DocumentSnapshot, Query, DocumentChangeAction } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -231,13 +231,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     offset?: Offset<M>,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
+    console.log(whereArray, orderBy, limit, offset);
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
     if (
       (whereArray && whereArray.length > 0) ||
       orderBy ||
       (limit !== null && limit !== undefined) ||
-      (offset && (offset.endBefore || offset.startAfter))
+      (offset && (offset.endBefore || offset.startAfter || offset.endAt || offset.startAt))
     ) {
       const specialQuery = (ref) => {
         let query: Query = ref;
@@ -253,14 +254,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         }
         if (offset && offset.startAt) {
           query = query.startAt(offset.startAt);
-        }
-        if (offset && offset.startAfter) {
+        } else if (offset && offset.startAfter) {
           query = query.startAfter(offset.startAfter);
-        }
-        if (offset && offset.endAt) {
+        } else if (offset && offset.endAt) {
           query = query.endAt(offset.endAt);
-        }
-        if (offset && offset.endBefore) {
+        } else if (offset && offset.endBefore) {
           query = query.endBefore(offset.endBefore);
         }
         if (limit !== null && limit !== undefined && limit > -1) {
