@@ -4,7 +4,8 @@ import {
   DocumentReference,
   DocumentSnapshot,
   Query,
-  DocumentChangeAction
+  DocumentChangeAction,
+  QuerySnapshot
 } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
@@ -186,14 +187,22 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     // console.log('getByPath of ', docPath);
     return this.db
       .doc<M>(docPath)
-      .snapshotChanges()
+      .get()
       .pipe(
         catchError((err) => {
           console.error(`an error occurred in getByPath with params: ${docPath}`);
           throw new Error(err);
         }),
-        map(doc => this.getModelFromSnapshot(doc.payload))
+        map((doc: DocumentSnapshot<M>) => this.getModelFromSnapshot(doc))
       );
+    // .snapshotChanges()
+    // .pipe(
+    //   catchError((err) => {
+    //     console.error(`an error occurred in getByPath with params: ${docPath}`);
+    //     throw new Error(err);
+    //   }),
+    //   map(doc => this.getModelFromSnapshot(doc.payload))
+    // );
   }
 
 
@@ -279,18 +288,35 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
     }
 
-    return queryResult.snapshotChanges().pipe(
-      catchError((err) => {
-        // tslint:disable-next-line:max-line-length
-        console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
-        return throwError(err);
-      }),
-      map((changeActionsList: DocumentChangeAction<M>[]) => {
-        return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
-          return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
-        });
-      })
-    );
+    return queryResult
+      .get().pipe(
+        catchError((err) => {
+          // tslint:disable-next-line:max-line-length
+          console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+          return throwError(err);
+        }),
+        map((snap: QuerySnapshot<M>) => {
+          if (snap.empty) {
+            return [];
+          } else {
+            return snap.docs.map((doc: DocumentSnapshot<M>) => {
+              return this.getModelFromSnapshot(doc);
+            });
+          }
+        })
+      );
+    // .snapshotChanges().pipe(
+    //   catchError((err) => {
+    //     // tslint:disable-next-line:max-line-length
+    //     console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+    //     return throwError(err);
+    //   }),
+    //   map((changeActionsList: DocumentChangeAction<M>[]) => {
+    //     return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
+    //       return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
+    //     });
+    //   })
+    // );
   }
 
   /**
