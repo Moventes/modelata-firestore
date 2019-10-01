@@ -136,7 +136,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param partialDbObj onlythe data to save
    * @param id the identifier to use for insert (optionnal)
    */
-  public update(partialDbObj: Object, docId?: string, pathIds?: Array<string>): Promise<Object> {
+  public update(partialDbObj: Object | M, docId?: string, pathIds?: Array<string>): Promise<Object> {
     console.log(
       `super- dao ==== will update partially document at "${ModelHelper.getPath(
         this.collectionPath,
@@ -147,12 +147,18 @@ export abstract class AbstractDao<M extends AbstractModel> {
 
     if (!partialDbObj || !docId || !this.collectionPath) {
       return Promise.reject('required attrs');
+    } else if (this.objectIsM(partialDbObj)) {
+      return this.save(partialDbObj, docId, pathIds);
     } else {
       return this.pushData(partialDbObj, docId, pathIds)
         .then((result) => {
           return this.afterUpdate(result, docId);
         });
     }
+  }
+
+  private objectIsM(object: Object): object is M {
+    return object['_id'] && object['_collectionPath'];
   }
 
   /**
