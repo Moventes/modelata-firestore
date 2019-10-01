@@ -17,9 +17,6 @@ export abstract class AbstractModel {
   public _collectionPath: string;
 
   @Enumerable(false)
-  public _snapshot: DocumentSnapshot<this>;
-
-  @Enumerable(false)
   protected _controls: Object;
 
   @Enumerable(false)

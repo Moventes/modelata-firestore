@@ -65,6 +65,23 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
   }
 
+  protected getModelFromDbDoc(doc: M, path: string): M {
+    const pathIds = [];
+    const pathSplitted = path.split('/');
+    if (pathSplitted.length > 2) {
+      for (let i = 1; i < pathSplitted.length; i += 2) {
+        // take every evenIndexed element(second, fourth...)
+        pathIds.push(pathSplitted[i]);
+      }
+    }
+    const model = this.getModel(
+      doc,
+      pathSplitted[pathSplitted.length - 1],
+      pathIds
+    );
+    return model;
+  }
+
   /**
    * @inheritDoc
    */
@@ -187,22 +204,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     // console.log('getByPath of ', docPath);
     return this.db
       .doc<M>(docPath)
-      .get()
+      .valueChanges()
       .pipe(
         catchError((err) => {
           console.error(`an error occurred in getByPath with params: ${docPath}`);
           throw new Error(err);
         }),
-        map((doc: DocumentSnapshot<M>) => this.getModelFromSnapshot(doc))
+        map((doc: M) => this.getModelFromDbDoc(doc, docPath))
       );
-    // .snapshotChanges()
-    // .pipe(
-    //   catchError((err) => {
-    //     console.error(`an error occurred in getByPath with params: ${docPath}`);
-    //     throw new Error(err);
-    //   }),
-    //   map(doc => this.getModelFromSnapshot(doc.payload))
-    // );
   }
 
 
@@ -289,34 +298,22 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
 
     return queryResult
-      .get().pipe(
+      .valueChanges({ idField: '_id' }).pipe(
         catchError((err) => {
           // tslint:disable-next-line:max-line-length
           console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
           return throwError(err);
         }),
-        map((snap: QuerySnapshot<M>) => {
-          if (snap.empty) {
+        map((snap) => {
+          if (snap.length === 0) {
             return [];
           } else {
-            return snap.docs.map((doc: DocumentSnapshot<M>) => {
-              return this.getModelFromSnapshot(doc);
+            return snap.map((doc: M) => {
+              return this.getModelFromDbDoc(doc, ModelHelper.getPath(this.collectionPath, pathIds));
             });
           }
         })
       );
-    // .snapshotChanges().pipe(
-    //   catchError((err) => {
-    //     // tslint:disable-next-line:max-line-length
-    //     console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
-    //     return throwError(err);
-    //   }),
-    //   map((changeActionsList: DocumentChangeAction<M>[]) => {
-    //     return changeActionsList.map((changeAction: DocumentChangeAction<M>) => {
-    //       return this.getModelFromSnapshot(<DocumentSnapshot<M>>changeAction.payload.doc);
-    //     });
-    //   })
-    // );
   }
 
   /**
