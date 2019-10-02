@@ -22,8 +22,27 @@ import { AbstractModel } from './abstract.model';
  */
 export abstract class AbstractFirestoreDao<M extends AbstractModel> extends AbstractDao<M> {
 
+
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+  ////////////////// Attributes //////////////////
+  ////////////////////////////////////////////////
+  ////////////////////////////////////////////////
+
+
   public static clearAllCacheAndSubscription = new Subject();
   public cacheable: boolean;
+
+
+
+
+
+  /////////////////////////////////////////////////
+  /////////////////////////////////////////////////
+  ////////////////// Constructor //////////////////
+  /////////////////////////////////////////////////
+  /////////////////////////////////////////////////
+
 
   constructor(private db: AngularFirestore, cacheable = true) {
     super();
@@ -33,7 +52,57 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     });
   }
 
+
+
+
+
+  /////////////////////////////////////////////
+  /////////////////////////////////////////////
+  ////////////////// Helpers //////////////////
+  /////////////////////////////////////////////
+  /////////////////////////////////////////////
+
+
+  clearCache() {
+    if (this['cachedSubscription']) {
+      Object.values(this['cachedSubscription']).forEach((subscr: Subscription) => subscr.unsubscribe());
+      this['cachedSubscription'] = {};
+      this['cachedSubject'] = {};
+    }
+  }
+
+  public isCompatible(doc: M | DocumentReference): boolean {
+    return ModelHelper.isCompatiblePath(this.collectionPath, doc['path'] || doc['_collectionPath']);
+  }
+
+  getByPathToStringForCacheable(docPath: string) { return docPath; }
+
+  getListToStringForCacheable(
+    pathIds?: Array<string>,
+    whereArray?: Array<Where>,
+    orderBy?: OrderBy,
+    limit?: number
+  ) {
+    const whereArrayStr = whereArray && whereArray.length ? '[' + whereArray.map(function (wherep: Where) {
+      const where = wherep || { field: 'null', operator: '', value: '' };
+      return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
+    }).join(',') + ']' : 'undefined';
+    const orderByStr = orderBy ? `${orderBy.field}${orderBy.operator}` : '';
+    return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArrayStr},${orderByStr},${limit}`;
+  }
+
   voidFn(...args) { return args; }
+
+
+
+
+
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  ////////////////// Model conversion //////////////////
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+
 
   /**
    * @inheritDoc
@@ -63,7 +132,11 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
   }
 
-  protected getModelFromDbDoc(doc: M, path: string): M {
+  protected getModelFromDbDoc(doc: M, path: string, docId?: string): M {
+    // console.log('dbDoc', doc, 'path', path, 'docId', docId);
+    if (!doc._id) {
+      doc._id = docId ? docId : this.getIdFromPath(path);
+    }
     const pathIds = [];
     const pathSplitted = path.split('/');
     if (pathSplitted.length > 2) {
@@ -77,9 +150,52 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       doc._id,
       pathIds
     );
-    console.log('model from dbDoc = ', model);
+    // console.log('model from dbDoc = ', model);
     return model;
   }
+
+  /**
+   * method used to prepare the data for save
+   * @param modelObj the data to save
+   */
+  protected getDbObjFromModelObj(modelObj: M): Object {
+    // // create a model instance with the given data to gain access to the reference path getter methods
+    const dbObj: Object = {};
+
+    Object.keys(modelObj).forEach(key => {
+      if (!key.startsWith('$') && !key.startsWith('_') && typeof modelObj[key] !== 'undefined') {
+        if (modelObj[key] && modelObj[key].constructor.name === 'Object') {
+          dbObj[key] = this.getDbObjFromModelObj(modelObj[key]);
+        } else {
+          dbObj[key] = modelObj[key];
+        }
+      } else {
+        console.log('getDbObjFromModelObj ignore ', key);
+      }
+    });
+
+    return dbObj;
+  }
+
+  /**
+ * Returns the reference of the document located in the collectionPath with the id.
+ *
+ * @param modelObj - model M
+ */
+  public getReferenceFromModel(modelObj: M): DocumentReference {
+    return this.db.collection(modelObj._collectionPath).doc(modelObj._id).ref;
+  }
+
+
+
+
+
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+  ////////////////// Database methods //////////////////
+  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////
+
 
   /**
    * @inheritDoc
@@ -134,39 +250,12 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
   }
 
-  /**
-   * method used to prepare the data for save
-   * @param modelObj the data to save
-   */
-  protected getDbObjFromModelObj(modelObj: M): Object {
-    // // create a model instance with the given data to gain access to the reference path getter methods
-    const dbObj: Object = {};
-
-    Object.keys(modelObj).forEach(key => {
-      if (!key.startsWith('$') && !key.startsWith('_') && typeof modelObj[key] !== 'undefined') {
-        if (modelObj[key] && modelObj[key].constructor.name === 'Object') {
-          dbObj[key] = this.getDbObjFromModelObj(modelObj[key]);
-        } else {
-          dbObj[key] = modelObj[key];
-        }
-      } else {
-        console.log('getDbObjFromModelObj ignore ', key);
-      }
-    });
-
-    return dbObj;
-  }
-
-  public isCompatible(doc: M | DocumentReference): boolean {
-    return ModelHelper.isCompatiblePath(this.collectionPath, doc['path'] || doc['_collectionPath']);
-  }
-
   public getByReference(docRef: DocumentReference, cacheable = this.cacheable): Observable<M> {
     // console.log('getByReference of ', docRef.path, docRef.id);
 
     if (this.isCompatible(docRef)) {
       if (docRef && docRef.parent) {
-        return this.getByPath(docRef.path, cacheable);
+        return this.getByPath(docRef.path, null, cacheable);
       } else {
         throw new Error('getByReference missing parameter : dbRef.');
       }
@@ -175,56 +264,53 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
   }
 
-
-
-  clearCache() {
-    if (this['cachedSubscription']) {
-      Object.values(this['cachedSubscription']).forEach((subscr: Subscription) => subscr.unsubscribe());
-      this['cachedSubscription'] = {};
-      this['cachedSubject'] = {};
-    }
-  }
-
   /**
    * @inheritDoc
    */
-  public getById(docId: string, pathIds?: Array<string>, cacheable = this.cacheable): Observable<M> {
+  public getById(docId: string, pathIds?: Array<string>, cacheable = this.cacheable, completeOnFirst = false): Observable<M> {
     // console.log('getById of ', docId, pathIds);
     // const path = ModelHelper.getPath(this.collectionPath, pathIds, docId);
     // console.log(`getById ModelHelper.getPath return ${path} for ${this.collectionPath},${pathIds},${docId}`);
-    return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId), cacheable);
+    return this.getByPath(ModelHelper.getPath(this.collectionPath, pathIds, docId), completeOnFirst, cacheable);
   }
-
-  getByPathToStringForCacheable(docPath: string) { return docPath; }
 
   @Cacheable('getByPathToStringForCacheable')
-  getByPath(docPath: string, cacheable = this.cacheable): Observable<M> {
+  protected getByPath(docPath: string, completeOnFirst = false, cacheable = this.cacheable): Observable<M> {
     this.voidFn(cacheable);
     // console.log('getByPath of ', docPath);
-    return this.db
-      .doc<M>(docPath)
-      .valueChanges()
-      .pipe(
-        catchError((err) => {
-          console.error(`an error occurred in getByPath with params: ${docPath}`);
-          throw new Error(err);
-        }),
-        map((doc: M) => this.getModelFromDbDoc(doc, docPath))
-      );
+    const docId = this.getIdFromPath(docPath);
+    return completeOnFirst ?
+      this.db
+        .doc<M>(docPath)
+        .get()
+        .pipe(
+          catchError((err) => {
+            console.error(`an error occurred in getByPath with params: ${docPath}`);
+            throw new Error(err);
+          }),
+          map((docSnap: DocumentSnapshot<M>) => this.getModelFromSnapshot(docSnap))
+        ) :
+      this.db
+        .doc<M>(docPath)
+        .valueChanges()
+        .pipe(
+          catchError((err) => {
+            console.error(`an error occurred in getByPath with params: ${docPath}`);
+            throw new Error(err);
+          }),
+          map((doc: M) => this.getModelFromDbDoc(doc, docPath, docId))
+        );
   }
 
-
-  getListToStringForCacheable(pathIds?: Array<string>,
-    whereArray?: Array<Where>,
-    orderBy?: OrderBy,
-    limit?: number) {
-    const whereArrayStr = whereArray && whereArray.length ? '[' + whereArray.map(function (wherep: Where) {
-      const where = wherep || { field: 'null', operator: '', value: '' };
-      return `${where.field}${where.operator}${where.value && where.value.path ? where.value.path : where.value}`;
-    }).join(',') + ']' : 'undefined';
-    const orderByStr = orderBy ? `${orderBy.field}${orderBy.operator}` : '';
-    return `${pathIds && pathIds.length ? pathIds.join('/X/') : 'undefined'},${whereArrayStr},${orderByStr},${limit}`;
+  getIdFromPath(path: string): string {
+    const splittedPath = path.split('/');
+    if (splittedPath.length % 2 === 1) {
+      return splittedPath[splittedPath.length - 1];
+    } else {
+      return null;
+    }
   }
+
   /**
     * @inheritDoc
     */
@@ -235,12 +321,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     limit?: number,
     cacheable = this.cacheable,
     offset?: Offset<M>,
+    completeOnFirst = false,
   ): Observable<Array<M>> {
     return this.getListCacheable(pathIds,
       whereArray,
       orderBy,
       limit,
       offset,
+      completeOnFirst,
       cacheable);
   }
   /**
@@ -253,9 +341,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     offset?: Offset<M>,
+    completeOnFirst?: boolean,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
-    console.log(whereArray, orderBy, limit, offset);
+    // console.log(whereArray, orderBy, limit, offset);
     this.voidFn(cacheable);
     let queryResult: AngularFirestoreCollection<M>;
     if (
@@ -296,23 +385,43 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
     }
 
-    return queryResult
-      .valueChanges({ idField: '_id' }).pipe(
-        catchError((err) => {
-          // tslint:disable-next-line:max-line-length
-          console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
-          return throwError(err);
-        }),
-        map((snap) => {
-          if (snap.length === 0) {
-            return [];
-          } else {
-            return snap.map((doc: M) => {
-              return this.getModelFromDbDoc(doc, ModelHelper.getPath(this.collectionPath, pathIds));
-            });
-          }
-        })
-      );
+    return completeOnFirst ?
+      queryResult
+        .get()
+        .pipe(
+          catchError((err) => {
+            // tslint:disable-next-line:max-line-length
+            console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+            return throwError(err);
+          }),
+          map((snap) => {
+            if (snap.size === 0) {
+              return [];
+            } else {
+              return snap.docs.map((docSnap: DocumentSnapshot<M>) => {
+                return this.getModelFromSnapshot(docSnap);
+              });
+            }
+          })
+        ) :
+      queryResult
+        .valueChanges({ idField: '_id' })
+        .pipe(
+          catchError((err) => {
+            // tslint:disable-next-line:max-line-length
+            console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+            return throwError(err);
+          }),
+          map((snap) => {
+            if (snap.length === 0) {
+              return [];
+            } else {
+              return snap.map((doc: M) => {
+                return this.getModelFromDbDoc(doc, ModelHelper.getPath(this.collectionPath, pathIds));
+              });
+            }
+          })
+        );
   }
 
   /**
@@ -336,15 +445,6 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
    */
   public getReference(docId: string, pathIds?: Array<string>): DocumentReference {
     return this.db.doc(ModelHelper.getPath(this.collectionPath, pathIds, docId)).ref;
-  }
-
-  /**
-   * Returns the reference of the document located in the collectionPath with the id.
-   *
-   * @param modelObj - model M
-   */
-  public getReferenceFromModel(modelObj: M): DocumentReference {
-    return this.db.collection(modelObj._collectionPath).doc(modelObj._id).ref;
   }
 
   public getSnapshot(id: string): Observable<DocumentSnapshot<M>> {

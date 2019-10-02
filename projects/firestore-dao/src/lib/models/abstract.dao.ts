@@ -66,7 +66,11 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param collectionPath the path of the collection hosting the document
    * @param editable true to have a FromGroup, false to have a Model object
    */
-  public abstract getById(docId: string, pathIds?: Array<string>): Observable<M>;
+  public abstract getById(
+    docId: string,
+    pathIds?: Array<string>,
+    completeOnFirst?: boolean,
+  ): Observable<M>;
 
   /**
    * Return an observable of an array of models from database using the specified filters
@@ -84,6 +88,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
     limit?: number,
     cacheable?: boolean,
     offset?: Offset<M>,
+    completeOnFirst?: boolean,
   ): Observable<Array<M>>;
 
   /**
