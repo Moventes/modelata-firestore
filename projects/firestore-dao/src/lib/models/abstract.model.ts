@@ -73,10 +73,6 @@ export abstract class AbstractModel {
       ObjectHelper.createHiddenProperty(this, 'fromCache', dbObj['_fromCache']);
     }
 
-    if (dbObj && dbObj['_snapshot']) {
-      ObjectHelper.createHiddenProperty(this, 'snapshot', dbObj['_snapshot']);
-    }
-
     if (dbObj && dbObj['_updateDate'] && typeof dbObj['_updateDate'].toDate === 'function') {
       ObjectHelper.createHiddenProperty(this, 'updateDate', dbObj['_updateDate'].toDate());
     }

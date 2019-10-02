@@ -4,8 +4,6 @@ import {
   DocumentReference,
   DocumentSnapshot,
   Query,
-  DocumentChangeAction,
-  QuerySnapshot
 } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
 import { Observable, Subject, Subscription, throwError } from 'rxjs';
@@ -51,7 +49,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
         }
       }
       const model = this.getModel(
-        { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache, _snapshot: documentSnapshot },
+        { ...documentSnapshot.data(), _fromCache: documentSnapshot.metadata.fromCache },
         documentSnapshot.id,
         pathIds
       );
@@ -76,9 +74,10 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     }
     const model = this.getModel(
       doc,
-      pathSplitted[pathSplitted.length - 1],
+      doc._id,
       pathIds
     );
+    console.log('model from dbDoc = ', model);
     return model;
   }
 
@@ -346,5 +345,9 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
    */
   public getReferenceFromModel(modelObj: M): DocumentReference {
     return this.db.collection(modelObj._collectionPath).doc(modelObj._id).ref;
+  }
+
+  public getSnapshot(id: string): Observable<DocumentSnapshot<M>> {
+    return this.db.collection(this.collectionPath).doc<M>(id).get().pipe(map((doc: DocumentSnapshot<M>) => doc));
   }
 }
