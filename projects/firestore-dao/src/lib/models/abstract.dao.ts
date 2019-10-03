@@ -79,7 +79,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param orderBy orderBy object ({field, operator})
    * @param limit number of results returned
    * @param cacheable use cache
-   * @param offset boundary document snapshot ({startAfter?, endBefore?, startAt?, endAt?})
+   * @param offset boundary document id ({startAfter?, endBefore?, startAt?, endAt?})
    */
   public abstract getList(
     pathIds?: Array<string>,
