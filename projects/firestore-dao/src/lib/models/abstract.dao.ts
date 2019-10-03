@@ -87,7 +87,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
     orderBy?: OrderBy,
     limit?: number,
     cacheable?: boolean,
-    offset?: Offset<M>,
+    offset?: Offset,
     completeOnFirst?: boolean,
   ): Observable<Array<M>>;
 
@@ -194,4 +194,6 @@ export abstract class AbstractDao<M extends AbstractModel> {
   protected afterUpdate(obj: Object, id?: string): Promise<Object> {
     return Promise.resolve(obj);
   }
+
+  public abstract getSnapshot(id: string): Observable<DocumentSnapshot<M>>;
 }

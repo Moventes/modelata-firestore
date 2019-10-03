@@ -6,8 +6,8 @@ import {
   Query,
 } from '@angular/fire/firestore';
 import { firestore } from 'firebase/app';
-import { Observable, Subject, Subscription, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, Subject, Subscription, throwError, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { Cacheable } from '../decorators/cacheable.decorator';
 import { ModelHelper } from '../helpers/model.helper';
 import { ObjectHelper } from '../helpers/object.helper';
@@ -77,6 +77,15 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
 
   getByPathToStringForCacheable(docPath: string) { return docPath; }
 
+  getIdFromPath(path: string): string {
+    const splittedPath = path.split('/');
+    if (splittedPath.length % 2 === (path.startsWith('/') ? 1 : 0)) {
+      return splittedPath[splittedPath.length - 1];
+    } else {
+      return null;
+    }
+  }
+
   getListToStringForCacheable(
     pathIds?: Array<string>,
     whereArray?: Array<Where>,
@@ -133,25 +142,29 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
   }
 
   protected getModelFromDbDoc(doc: M, path: string, docId?: string): M {
-    // console.log('dbDoc', doc, 'path', path, 'docId', docId);
-    if (!doc._id) {
-      doc._id = docId ? docId : this.getIdFromPath(path);
-    }
-    const pathIds = [];
-    const pathSplitted = path.split('/');
-    if (pathSplitted.length > 2) {
-      for (let i = 1; i < pathSplitted.length; i += 2) {
-        // take every evenIndexed element(second, fourth...)
-        pathIds.push(pathSplitted[i]);
+    if (!doc) {
+      console.log('dbDoc', doc, 'path', path, 'docId', docId);
+      return null;
+    } else {
+      if (!doc._id) {
+        doc._id = docId ? docId : this.getIdFromPath(path);
       }
+      const pathIds = [];
+      const pathSplitted = path.split('/');
+      if (pathSplitted.length > 2) {
+        for (let i = 1; i < pathSplitted.length; i += 2) {
+          // take every evenIndexed element(second, fourth...)
+          pathIds.push(pathSplitted[i]);
+        }
+      }
+      const model = this.getModel(
+        doc,
+        doc._id,
+        pathIds
+      );
+      // console.log('model from dbDoc = ', model);
+      return model;
     }
-    const model = this.getModel(
-      doc,
-      doc._id,
-      pathIds
-    );
-    // console.log('model from dbDoc = ', model);
-    return model;
   }
 
   /**
@@ -255,7 +268,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
 
     if (this.isCompatible(docRef)) {
       if (docRef && docRef.parent) {
-        return this.getByPath(docRef.path, null, cacheable);
+        return this.getByPath(docRef.path, false, cacheable);
       } else {
         throw new Error('getByReference missing parameter : dbRef.');
       }
@@ -288,7 +301,13 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
             console.error(`an error occurred in getByPath with params: ${docPath}`);
             throw new Error(err);
           }),
-          map((docSnap: DocumentSnapshot<M>) => this.getModelFromSnapshot(docSnap))
+          map((docSnap: DocumentSnapshot<M>) => {
+            if (!docSnap.exists) {
+              return null;
+            } else {
+              return this.getModelFromSnapshot(docSnap);
+            }
+          })
         ) :
       this.db
         .doc<M>(docPath)
@@ -298,17 +317,14 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
             console.error(`an error occurred in getByPath with params: ${docPath}`);
             throw new Error(err);
           }),
-          map((doc: M) => this.getModelFromDbDoc(doc, docPath, docId))
+          map((doc: M) => {
+            if (!doc) {
+              return null;
+            } else {
+              return this.getModelFromDbDoc(doc, docPath, docId);
+            }
+          })
         );
-  }
-
-  getIdFromPath(path: string): string {
-    const splittedPath = path.split('/');
-    if (splittedPath.length % 2 === 1) {
-      return splittedPath[splittedPath.length - 1];
-    } else {
-      return null;
-    }
   }
 
   /**
@@ -320,7 +336,7 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     orderBy?: OrderBy,
     limit?: number,
     cacheable = this.cacheable,
-    offset?: Offset<M>,
+    offset?: Offset,
     completeOnFirst = false,
   ): Observable<Array<M>> {
     return this.getListCacheable(pathIds,
@@ -340,88 +356,98 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
     whereArray?: Array<Where>,
     orderBy?: OrderBy,
     limit?: number,
-    offset?: Offset<M>,
+    offset?: Offset,
     completeOnFirst?: boolean,
     cacheable = this.cacheable,
   ): Observable<Array<M>> {
     // console.log(whereArray, orderBy, limit, offset);
     this.voidFn(cacheable);
-    let queryResult: AngularFirestoreCollection<M>;
-    if (
-      (whereArray && whereArray.length > 0) ||
-      orderBy ||
-      (limit !== null && limit !== undefined) ||
-      (offset && (offset.endBefore || offset.startAfter || offset.endAt || offset.startAt))
-    ) {
-      const specialQuery = (ref) => {
-        let query: Query = ref;
-        if (whereArray && whereArray.length > 0) {
-          whereArray.forEach((where) => {
-            if (where) {
-              query = query.where(where.field, where.operator, where.value);
-            }
-          });
-        }
-        if (orderBy) {
-          query = query.orderBy(orderBy.field, orderBy.operator);
-        }
-        if (offset && offset.startAt) {
-          query = query.startAt(offset.startAt);
-        } else if (offset && offset.startAfter) {
-          query = query.startAfter(offset.startAfter);
-        } else if (offset && offset.endAt) {
-          query = query.endAt(offset.endAt);
-        } else if (offset && offset.endBefore) {
-          query = query.endBefore(offset.endBefore);
-        }
-        if (limit !== null && limit !== undefined && limit > -1) {
-          query = query.limit(limit);
-        }
-        return query;
-      };
 
-      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds), specialQuery);
-    } else {
-      queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
-    }
+    const queryObs = offset && (offset.endBefore || offset.startAfter || offset.endAt || offset.startAt) ?
+      this.getSnapshot(offset.endBefore || offset.startAfter || offset.endAt || offset.startAt) :
+      of(null);
 
-    return completeOnFirst ?
-      queryResult
-        .get()
-        .pipe(
-          catchError((err) => {
-            // tslint:disable-next-line:max-line-length
-            console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
-            return throwError(err);
-          }),
-          map((snap) => {
-            if (snap.size === 0) {
-              return [];
-            } else {
-              return snap.docs.map((docSnap: DocumentSnapshot<M>) => {
-                return this.getModelFromSnapshot(docSnap);
+    return queryObs.pipe(
+      map((offsetSnap) => {
+        let queryResult: AngularFirestoreCollection<M>;
+        if (
+          (whereArray && whereArray.length > 0) ||
+          orderBy ||
+          (limit !== null && limit !== undefined) ||
+          (offset && (offset.endBefore || offset.startAfter || offset.endAt || offset.startAt))
+        ) {
+          const specialQuery = (ref) => {
+            let query: Query = ref;
+            if (whereArray && whereArray.length > 0) {
+              whereArray.forEach((where) => {
+                if (where) {
+                  query = query.where(where.field, where.operator, where.value);
+                }
               });
             }
-          })
-        ) :
-      queryResult
-        .valueChanges({ idField: '_id' })
-        .pipe(
-          catchError((err) => {
-            // tslint:disable-next-line:max-line-length
-            console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
-            return throwError(err);
-          }),
-          map((snap) => {
-            if (snap.length === 0) {
-              return [];
-            } else {
-              return snap.map((doc: M) => {
-                return this.getModelFromDbDoc(doc, ModelHelper.getPath(this.collectionPath, pathIds));
-              });
+            if (orderBy) {
+              query = query.orderBy(orderBy.field, orderBy.operator);
             }
-          })
-        );
+            if (offset && offset.startAt) {
+              query = query.startAt(offsetSnap);
+            } else if (offset && offset.startAfter) {
+              query = query.startAfter(offsetSnap);
+            } else if (offset && offset.endAt) {
+              query = query.endAt(offsetSnap);
+            } else if (offset && offset.endBefore) {
+              query = query.endBefore(offsetSnap);
+            }
+            if (limit !== null && limit !== undefined && limit > -1) {
+              query = query.limit(limit);
+            }
+            return query;
+          };
+          queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds), specialQuery);
+        } else {
+          queryResult = this.db.collection<M>(ModelHelper.getPath(this.collectionPath, pathIds));
+        }
+        return queryResult;
+      }),
+      switchMap((queryResult) => {
+        return completeOnFirst ?
+          queryResult
+            .get()
+            .pipe(
+              catchError((err) => {
+                // tslint:disable-next-line:max-line-length
+                console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+                return throwError(err);
+              }),
+              map((snap) => {
+                if (snap.size === 0) {
+                  return [];
+                } else {
+                  return snap.docs.filter(doc => doc.exists).map((docSnap: DocumentSnapshot<M>) => {
+                    return this.getModelFromSnapshot(docSnap);
+                  });
+                }
+              })
+            ) :
+          queryResult
+            .valueChanges({ idField: '_id' })
+            .pipe(
+              catchError((err) => {
+                // tslint:disable-next-line:max-line-length
+                console.error(`an error occurred in getListCacheable with params: ${this.collectionPath} ${pathIds ? pathIds : ''} ${whereArray ? whereArray : ''} ${orderBy ? orderBy : ''} ${limit ? limit : ''}`);
+                return throwError(err);
+              }),
+              map((snap) => {
+                if (snap.length === 0) {
+                  return [];
+                } else {
+                  return snap.filter(doc => !!doc).map((doc: M) => {
+                    return this.getModelFromDbDoc(doc, ModelHelper.getPath(this.collectionPath, pathIds));
+                  });
+                }
+              })
+            );
+      })
+    );
   }
 
   /**
