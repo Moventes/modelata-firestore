@@ -11,9 +11,9 @@ export interface OrderBy {
   operator: firebase.firestore.OrderByDirection;
 }
 
-export interface Offset<M> {
-  startAt?: DocumentSnapshot<M>;
-  startAfter?: DocumentSnapshot<M>;
-  endAt?: DocumentSnapshot<M>;
-  endBefore?: DocumentSnapshot<M>;
+export interface Offset {
+  startAt?: string;
+  startAfter?: string;
+  endAt?: string;
+  endBefore?: string;
 }

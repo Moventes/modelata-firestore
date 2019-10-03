@@ -66,7 +66,11 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param collectionPath the path of the collection hosting the document
    * @param editable true to have a FromGroup, false to have a Model object
    */
-  public abstract getById(docId: string, pathIds?: Array<string>): Observable<M>;
+  public abstract getById(
+    docId: string,
+    pathIds?: Array<string>,
+    completeOnFirst?: boolean,
+  ): Observable<M>;
 
   /**
    * Return an observable of an array of models from database using the specified filters
@@ -75,7 +79,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param orderBy orderBy object ({field, operator})
    * @param limit number of results returned
    * @param cacheable use cache
-   * @param offset last document snapshot of previous page for pagination or first document snapshot of next page ({startAfter?, endBefore?})
+   * @param offset boundary document id ({startAfter?, endBefore?, startAt?, endAt?})
    */
   public abstract getList(
     pathIds?: Array<string>,
@@ -83,7 +87,8 @@ export abstract class AbstractDao<M extends AbstractModel> {
     orderBy?: OrderBy,
     limit?: number,
     cacheable?: boolean,
-    offset?: Offset<M>,
+    offset?: Offset,
+    completeOnFirst?: boolean,
   ): Observable<Array<M>>;
 
   /**
@@ -136,7 +141,7 @@ export abstract class AbstractDao<M extends AbstractModel> {
    * @param partialDbObj onlythe data to save
    * @param id the identifier to use for insert (optionnal)
    */
-  public update(partialDbObj: Object, docId?: string, pathIds?: Array<string>): Promise<Object> {
+  public update(partialDbObj: Object | M, docId?: string, pathIds?: Array<string>): Promise<Object> {
     console.log(
       `super- dao ==== will update partially document at "${ModelHelper.getPath(
         this.collectionPath,
@@ -147,12 +152,18 @@ export abstract class AbstractDao<M extends AbstractModel> {
 
     if (!partialDbObj || !docId || !this.collectionPath) {
       return Promise.reject('required attrs');
+    } else if (this.objectIsM(partialDbObj)) {
+      return this.save(partialDbObj, docId, pathIds);
     } else {
       return this.pushData(partialDbObj, docId, pathIds)
         .then((result) => {
           return this.afterUpdate(result, docId);
         });
     }
+  }
+
+  private objectIsM(object: Object): object is M {
+    return object['_id'] && object['_collectionPath'];
   }
 
   /**
@@ -183,4 +194,6 @@ export abstract class AbstractDao<M extends AbstractModel> {
   protected afterUpdate(obj: Object, id?: string): Promise<Object> {
     return Promise.resolve(obj);
   }
+
+  public abstract getSnapshot(id: string): Observable<DocumentSnapshot<M>>;
 }
