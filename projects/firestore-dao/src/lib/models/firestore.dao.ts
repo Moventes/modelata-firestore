@@ -151,12 +151,20 @@ export abstract class AbstractFirestoreDao<M extends AbstractModel> extends Abst
       }
       const pathIds = [];
       const pathSplitted = path.split('/');
-      if (pathSplitted.length > 2) {
-        for (let i = 1; i < pathSplitted.length; i += 2) {
-          // take every evenIndexed element(second, fourth...)
-          pathIds.push(pathSplitted[i]);
-        }
+      // console.log('>> doc path', path);
+      // console.log('>> service collectionPath', this.collectionPath);
+
+
+      if (pathSplitted.length > 1) {
+        const collectionPathSplitted = this.collectionPath.split('/');
+        collectionPathSplitted.forEach(((portion, index) => {
+          // console.log('>>>> portion: ', portion);
+          if (portion === '?') {
+            pathIds.push(pathSplitted[index]);
+          }
+        }));
       }
+      // console.log('>> pathIds', pathIds);
       const model = this.getModel(
         doc,
         doc._id,
